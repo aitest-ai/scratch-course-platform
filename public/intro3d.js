@@ -6,8 +6,10 @@ import {GLTFLoader} from '/vendor/GLTFLoader.js';
 const FONT = '"Noto Sans TC","Microsoft JhengHei",sans-serif';
 export const CHARS = {
   boss: {file: 'wang', name: '老闆'},
-  an: {file: 'an', name: '藍衣小朋友'}, qing: {file: 'qing', name: '紅衣小朋友'}, zhe: {file: 'zhe', name: '黃衣小朋友'}, yu: {file: 'yu', name: '橘帽小朋友'},
-  mei: {file: 'mei', name: '水果攤老闆娘'}, ting: {file: 'ting', name: '道場主人'}, lin: {file: 'lin', name: '太空站站長'}
+  mei: {file: 'kk_rogue', name: '水果攤老闆娘', stall: true, strip: ['Knife_Offhand', '1H_Crossbow', '2H_Crossbow', 'Knife', 'Throwable']},
+  ting: {file: 'kk_barbarian', name: '道場主人', strip: ['1H_Axe_Offhand', 'Barbarian_Round_Shield', '1H_Axe', '2H_Axe', 'Mug']},
+  lin: {file: 'lin', name: '太空站站長', astronaut: true},
+  yu: {file: 'kk_knight', name: '冒險隊長', strip: ['1H_Sword_Offhand', 'Badge_Shield', 'Rectangle_Shield', 'Round_Shield', 'Spike_Shield', '1H_Sword', '2H_Sword']}
 };
 
 export async function createWorld(canvas, {META, info, CART_IDS}) {
@@ -46,20 +48,28 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
   const board = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 2.2), new THREE.MeshStandardMaterial({map: ctex(256, 170, (g, w, h) => { g.fillStyle = '#b98a58'; g.fillRect(0, 0, w, h); for (let i = 0; i < 400; i++) { g.fillStyle = Math.random() < .5 ? '#a37646' : '#c89a68'; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); } g.strokeStyle = '#6b4a2a'; g.lineWidth = 8; g.strokeRect(0, 0, w, h); }), roughness: 1})); board.position.set(-5.4, 3.0, -2.86); room.add(board);
   const noteCols = [0xfff2a8, 0xffc8d8, 0xbfe8ff, 0xd5f5c0, 0xfff2a8, 0xffd8a8];
   for (let i = 0; i < 6; i++) { const p = new THREE.Mesh(new THREE.PlaneGeometry(.8, .62), new THREE.MeshStandardMaterial({color: noteCols[i], roughness: .95})); p.position.set(-6.5 + (i % 3) * 1.1, 3.4 - Math.floor(i / 3) * .85, -2.82); p.rotation.z = (i % 3 - 1) * .08 + (i > 2 ? .05 : 0); room.add(p); notes.push(p); const pin = new THREE.Mesh(new THREE.SphereGeometry(.05, 8, 6), mat(0xe8483a)); pin.position.set(p.position.x, p.position.y + .24, -2.78); room.add(pin); }
+
+  // 前牆與店門（從櫃檯往外看的背景）
+  { const fw = new THREE.Mesh(new THREE.PlaneGeometry(26, 6.5), new THREE.MeshStandardMaterial({map: wallTex, roughness: .9})); fw.position.set(0, 3.25, 5.4); fw.rotation.y = Math.PI; room.add(fw);
+    const fr = mat(0xffc83d); box(2.3, .14, .16, fr, 0, 2.85, 5.3, room); box(.14, 2.85, .16, fr, -1.1, 1.42, 5.3, room); box(.14, 2.85, .16, fr, 1.1, 1.42, 5.3, room);
+    const door = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 2.75), new THREE.MeshBasicMaterial({color: 0x0a0826})); door.position.set(0, 1.4, 5.35); door.rotation.y = Math.PI; room.add(door);
+    const op = new THREE.Mesh(new THREE.PlaneGeometry(1.5, .5), new THREE.MeshBasicMaterial({map: ctex(256, 86, (g, w, h) => { g.fillStyle = '#120f34'; g.fillRect(0, 0, w, h); g.strokeStyle = '#38e1ff'; g.lineWidth = 6; g.strokeRect(5, 5, w - 10, h - 10); g.fillStyle = '#7dff7d'; g.font = `900 46px ${FONT}`; g.textAlign = 'center'; g.fillText('營業中', w / 2, 60); })})); op.position.set(0, 3.25, 5.3); op.rotation.y = Math.PI; room.add(op);
+    [-4.4, 4.4].forEach(x => { const w2 = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2), win.material); w2.position.set(x, 2.5, 5.3); w2.rotation.y = Math.PI; room.add(w2); box(2.8, .12, .12, mat(0xffc83d), x, 3.54, 5.28, room); box(2.8, .12, .12, mat(0xffc83d), x, 1.46, 5.28, room); }); }
   // 櫃檯與電腦
   const wood = mat(0x8a5a34), wood2 = mat(0xa8744a);
   box(3.4, .95, 1.0, wood, 0, .48, -1.3, room); box(3.6, .1, 1.2, wood2, 0, 1.0, -1.3, room);
+  const props = new THREE.Group(); room.add(props);
   const monTex = ctex(256, 192, (g, w, h) => { g.fillStyle = '#10163a'; g.fillRect(0, 0, w, h); g.fillStyle = '#38e1ff'; g.font = `700 22px ${FONT}`; g.fillText('訂單：好多好多…', 14, 40); g.fillStyle = '#ff6a8a'; for (let i = 0; i < 5; i++) g.fillRect(14, 62 + i * 22, 60 + (i * 53 % 150), 10); });
-  box(.9, .62, .1, mat(0x23203f), -.9, 1.5, -1.5, room); box(.12, .3, .12, mat(0x23203f), -.9, 1.15, -1.5, room);
-  const mon = new THREE.Mesh(new THREE.PlaneGeometry(.8, .52), new THREE.MeshBasicMaterial({map: monTex})); mon.position.set(-.9, 1.5, -1.44); room.add(mon);
-  for (let i = 0; i < 4; i++) box(.55, .05, .4, mat(0xfffaf0), .7 + i * .02, 1.08 + i * .05, -1.2, room).rotation.y = i * .25;
-  box(.14, .16, .14, mat(0xe8483a), 1.35, 1.14, -1.4, room);
+  box(.9, .62, .1, mat(0x23203f), 1.55, 1.5, -1.5, props); box(.12, .3, .12, mat(0x23203f), 1.55, 1.15, -1.5, props);
+  const mon = new THREE.Mesh(new THREE.PlaneGeometry(.8, .52), new THREE.MeshBasicMaterial({map: monTex})); mon.position.set(1.55, 1.5, -1.44); props.add(mon);
+  for (let i = 0; i < 4; i++) box(.55, .05, .4, mat(0xfffaf0), -.1 + i * .02, 1.08 + i * .05, -1.2, props).rotation.y = i * .25;
+  box(.14, .16, .14, mat(0xe8483a), 1.1, 1.14, -1.4, props);
   // 地上散落的紙團
   for (let i = 0; i < 7; i++) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(.1, 0), mat(0xfffaf0, {flatShading: true})); m.position.set(-3 + i * 1.1 + Math.sin(i) * .4, .1, 1.2 + Math.cos(i * 2) * 1.2); room.add(m); }
 
   /* ---------- 舊街機（插卡帶的地方） ---------- */
   let view_cab = null; const cab = new THREE.Group(); cab.position.set(-5.2, 0, -1.7); cab.rotation.y = .3; room.add(cab);
-  const marqCv = document.createElement('canvas'); marqCv.width = 512; marqCv.height = 128; { const g = marqCv.getContext('2d'); g.fillStyle = '#1a1648'; g.fillRect(0, 0, 512, 128); g.font = `900 70px ${FONT}`; g.textAlign = 'center'; g.fillStyle = '#ffc83d'; g.shadowColor = '#ff9a2a'; g.shadowBlur = 18; g.fillText('阿機 ARCADE', 256, 90); }
+  const marqCv = document.createElement('canvas'); marqCv.width = 512; marqCv.height = 128; { const g = marqCv.getContext('2d'); g.fillStyle = '#1a1648'; g.fillRect(0, 0, 512, 128); g.font = `900 70px ${FONT}`; g.textAlign = 'center'; g.fillStyle = '#ffc83d'; g.shadowColor = '#ff9a2a'; g.shadowBlur = 18; g.fillText('STAR ARCADE', 256, 90); }
   const marqTex = new THREE.CanvasTexture(marqCv); marqTex.colorSpace = THREE.SRGBColorSpace; marqTex.flipY = false;
   const scrCv = document.createElement('canvas'); scrCv.width = 256; scrCv.height = 192; const sg = scrCv.getContext('2d'); const scrTex = new THREE.CanvasTexture(scrCv); scrTex.colorSpace = THREE.SRGBColorSpace;
   scrTex.flipY = false;
@@ -144,15 +154,57 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
   } catch (e) { console.warn('街機 GLB 載入失敗', e); }
   const clips = Object.fromEntries(animGltf.animations.map(a => [a.name, a]));
   const shadowTex = ctex(64, 64, g => { const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, '#000a'); gr.addColorStop(1, '#0000'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); });
+
+  // 太空人：整身換白色太空衣，加玻璃頭盔、背包、胸前面板
+  function makeAstronaut(root) {
+    root.updateMatrixWorld(true);
+    const white = new THREE.MeshStandardMaterial({color: 0xf2f4fb, roughness: .55, metalness: .05}), grey = new THREE.MeshStandardMaterial({color: 0x9aa3b8, roughness: .5, metalness: .3});
+    ['Mage_Body', 'Mage_ArmLeft', 'Mage_ArmRight', 'Mage_LegLeft', 'Mage_LegRight'].forEach(n => { const m = root.getObjectByName(n); if (m) m.material = n.includes('Leg') ? grey : white; });
+    const gl = root.getObjectByName('Glasses'); if (gl && gl.parent) gl.parent.remove(gl);
+    const attach = (bone, mesh, wp, wq) => { const ws = new THREE.Vector3(); bone.getWorldScale(ws); const bq = new THREE.Quaternion(); bone.getWorldQuaternion(bq); mesh.scale.multiply(new THREE.Vector3(1 / ws.x, 1 / ws.y, 1 / ws.z)); mesh.quaternion.copy(bq.invert()); bone.add(mesh); mesh.position.copy(bone.worldToLocal(wp.clone())); };
+    const head = root.getObjectByName('Head'), body = root.getObjectByName('Mage_Body'), hb = root.getObjectByName('head'), cb = root.getObjectByName('chest');
+    if (head && hb) {
+      const bb = new THREE.Box3().setFromObject(head), c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3()), r = Math.max(sz.x, sz.y, sz.z) * .62;
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 28, 18), new THREE.MeshStandardMaterial({color: 0xcfeaff, transparent: true, opacity: .26, roughness: .08, metalness: .4, side: THREE.DoubleSide, depthWrite: false}));
+      attach(hb, dome, c);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(r * .82, r * .09, 10, 28), new THREE.MeshStandardMaterial({color: 0xff7a2a, roughness: .5})); ring.rotation.x = Math.PI / 2;
+      const rg = new THREE.Group(); rg.add(ring); attach(hb, rg, c.clone().add(new THREE.Vector3(0, -r * .78, 0)));
+    }
+    if (body && cb) {
+      const bb = new THREE.Box3().setFromObject(body), c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3());
+      const pack = new THREE.Mesh(new THREE.BoxGeometry(sz.x * .8, sz.y * .85, sz.z * .55), new THREE.MeshStandardMaterial({color: 0xd7dbe8, roughness: .5, metalness: .2}));
+      attach(cb, pack, c.clone().add(new THREE.Vector3(0, 0, -sz.z * .72)));
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(sz.x * .55, sz.y * .3, sz.z * .08), new THREE.MeshStandardMaterial({color: 0xff7a2a, emissive: 0xff5a10, emissiveIntensity: .35}));
+      attach(cb, panel, c.clone().add(new THREE.Vector3(0, sz.y * .08, sz.z * .5)));
+      const led = new THREE.Mesh(new THREE.BoxGeometry(sz.x * .18, sz.y * .08, sz.z * .1), new THREE.MeshBasicMaterial({color: 0x38e1ff})); attach(cb, led, c.clone().add(new THREE.Vector3(sz.x * .12, sz.y * .08, sz.z * .53)));
+    }
+  }
+  // 水果攤：站在攤位後面（前方是擺滿水果的木桌＋遮陽布）
+  function makeStall(g) {
+    const st = new THREE.Group(); st.position.set(0, 0, .75);
+    const wd = new THREE.MeshStandardMaterial({color: 0xa8744a, roughness: .8});
+    const t = new THREE.Mesh(new THREE.BoxGeometry(1.5, .62, .5), wd); t.position.y = .31; st.add(t);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(1.6, .06, .6), new THREE.MeshStandardMaterial({color: 0xc99363})); top.position.y = .65; st.add(top);
+    const cols = [0xe8483a, 0xffa53a, 0x7ad84a, 0xe8483a, 0xffd23a, 0xe8483a, 0xb55ad8, 0xffa53a];
+    cols.forEach((c, i) => { const f = new THREE.Mesh(new THREE.SphereGeometry(.1, 12, 10), new THREE.MeshStandardMaterial({color: c, roughness: .4})); f.position.set(-.6 + i * .17, .78 + (i % 2) * .05, (i % 3 - 1) * .1); st.add(f); });
+    [-.7, .7].forEach(x => { const p = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 1.9, 8), wd); p.position.set(x, .95, -.2); st.add(p); });
+    const aw = new THREE.Mesh(new THREE.BoxGeometry(1.7, .05, .9), new THREE.MeshStandardMaterial({map: ctex(128, 32, (gg, w, h) => { for (let i = 0; i < 8; i++) { gg.fillStyle = i % 2 ? '#fff' : '#e8483a'; gg.fillRect(i * 16, 0, 16, h); } })})); aw.position.set(0, 1.88, -.05); aw.rotation.x = .18; st.add(aw);
+    g.add(st);
+  }
   const actors = {};
   async function addActor(key, x, z, opts = {}) {
+    let a_h = 0;
     if (actors[key]) return actors[key];
     const gl = await loader.loadAsync(`/models/${CHARS[key].file}.glb`);
     const root = gl.scene; const g = new THREE.Group(); g.add(root);
-    const b = new THREE.Box3().setFromObject(root); const s = 1.75 / (b.max.y - b.min.y); root.scale.setScalar(s); root.position.y = -b.min.y * s;
+    const CH = CHARS[key] || {};
+    (CH.strip || []).forEach(n => { const o = root.getObjectByName(n); if (o && o.parent) o.parent.remove(o); });
+    if (CH.astronaut) makeAstronaut(root);
+    if (CH.stall) makeStall(g);
+    root.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(root, true); const s = (CH.h || 2.0) / (b.max.y - b.min.y); a_h = (b.max.y - b.min.y) * s; root.scale.setScalar(s); root.position.y = -b.min.y * s;
     const sd = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), new THREE.MeshBasicMaterial({map: shadowTex, transparent: true, depthWrite: false})); sd.rotation.x = -Math.PI / 2; sd.position.y = .02; g.add(sd);
     const mixer = new THREE.AnimationMixer(root);
-    const a = {key, g, mixer, cur: null, tx: x, tz: z, face: opts.face ?? 0, speed: 2.0, onArrive: null, hop: 0};
+    const a = {key, h: a_h, g, mixer, cur: null, tx: x, tz: z, face: opts.face ?? 0, speed: 2.0, onArrive: null, hop: 0};
     a.play = (n, fade = .22, once = false) => { if (a.cur === n || !clips[n]) return; const act = mixer.clipAction(clips[n]); act.reset(); act.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat); act.clampWhenFinished = once; act.fadeIn(fade).play(); if (a.act) a.act.fadeOut(fade); a.act = act; a.cur = n; };
     a.once = (n, back = 'Idle') => { if (!clips[n]) return; a.cur = null; a.play(n, .15, true); clearTimeout(a.bt); a.bt = setTimeout(() => { a.cur = null; a.play(back, .3); }, Math.max(300, clips[n].duration * 1000 - 120)); };
     a.goto = (nx, nz, face, cb) => { a.tx = nx; a.tz = nz; if (face != null) a.face = face; a.onArrive = cb || null; };
@@ -182,7 +234,8 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     room: {p: [0, 1.55, 5.6], l: [0, 1.25, -1]},
     boss: {p: [0, 1.6, 6.0], l: [0, 1.3, -1.8]},
     pair: {p: [0, 1.6, 6.0], l: [0, 1.3, -1.8]},
-    customers: {p: [0, 1.7, 7.6], l: [0, 1.1, 0]},
+    customers: {p: [0.2, 1.6, -2.9], l: [0.2, 0.7, 3]},
+    focus: {p: [0, 1.5, 0], l: [0, 1.2, 3]},
     cabinet: {p: [-1.8, 1.7, 5.0], l: [-5.0, 1.6, -1.4]},
     desk: {p: [0, 1.5, 4.6], l: [0, 1.0, -1.2]},
     types: {p: [0, 1.55, 5.4], l: [0, 1.2, 0]}
@@ -198,7 +251,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     mode = m;
     carts.forEach(c => setC(c, {z: -30}));
     if (m === 'portal') setC(byId.catch, {x: 0, y: .3, z: 2.2, s: .95, ry: .3});
-    if (m === 'types') { setC(byId.parkour, {x: -.55, y: 1.52, z: -2.4, s: .26, ry: .15}); setC(byId.puzzle, {x: .55, y: 1.52, z: -2.4, s: .26, ry: -.15}); }
+    
     if (m === 'recipe') ['catch', 'slice', 'dodge', 'fight'].forEach((id, i) => setC(byId[id], {x: (i - 1.5) * 1.9, y: 1.1, z: 0, s: .56}));
     if (m === 'go') setC(byId.catch, {x: -3.0, y: 1.9, z: 2.2, s: .62, ry: .2, rx: -.1});
   }
@@ -208,7 +261,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
   function pick(e) {
     const r = canvas.getBoundingClientRect(); pt.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(pt, camera);
     if (mode === 'types') { const hit = ray.intersectObjects(carts, true)[0]; if (hit) { let o = hit.object; while (o && !o.userData.id) o = o.parent; if (o) return {kind: 'cart', id: o.userData.id}; } }
-    if (mode === 'types') for (const k of ['mei', 'ting', 'lin', 'yu']) { const a = actors[k]; if (a) { const bx = new THREE.Box3(); bx.min.set(a.g.position.x - .55, 0, a.g.position.z - .45); bx.max.set(a.g.position.x + .55, 1.9, a.g.position.z + .45); if (ray.ray.intersectsBox(bx)) return {kind: 'npc', id: k}; } }
+    if (mode === 'types') for (const k of ['mei', 'ting', 'lin', 'yu'].filter(k => actors[k] && actors[k].g.visible)) { const a = actors[k]; if (a) { const bx = new THREE.Box3(); bx.min.set(a.g.position.x - .55, 0, a.g.position.z - .45); bx.max.set(a.g.position.x + .55, 1.9, a.g.position.z + .45); if (ray.ray.intersectsBox(bx)) return {kind: 'npc', id: k}; } }
     if (bug.visible && !bugState.caught) { const hit = ray.intersectObject(bug, true)[0]; if (hit) return {kind: 'bug'}; }
     return null;
   }
@@ -225,6 +278,11 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
   const view = {
     ready: true, flash, burst, actors, addActor, CHARS,
     shot(n) { shot = n; },
+    props(v) { props.visible = v; },
+    // 聚焦某位客人：鏡頭拉近，其他人先隱藏；card 在右邊，所以把人物放在畫面左側
+    focus(key) { const a = actors[key]; if (!a) return; Object.entries(actors).forEach(([k, o]) => { o.g.visible = (k === key); });
+      SHOTS.focus.p = [a.g.position.x - 1.1, 1.4, a.g.position.z - 2.9]; SHOTS.focus.l = [a.g.position.x - 1.1, 1.1, a.g.position.z]; shot = 'focus'; },
+    unfocus() { Object.values(actors).forEach(o => { o.g.visible = true; }); shot = 'customers'; },
     enterRoom() { roomVisible(true); stars.visible = false; },
     layout, pickCb(cb) { pickCb = cb || null; },
     say(key, text) { bubKey = text ? key : null; bub.hidden = !text; if (text) bub.textContent = text; },
@@ -248,10 +306,10 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
   // 迴圈
   const clock = new THREE.Clock(); const tmp = new THREE.Vector3();
   (function loop() {
-    const dt = Math.min(.05, clock.getDelta()), t = (performance.now() - t0) / 1000;
-    const S = SHOTS[shot]; camera.position.x += (S.p[0] - camera.position.x) * .045; camera.position.y += (S.p[1] - camera.position.y) * .045; camera.position.z += (S.p[2] - camera.position.z) * .045;
+    const dt = Math.min(.25, clock.getDelta()), t = (performance.now() - t0) / 1000;
+    const S = SHOTS[shot], kc = 1 - Math.exp(-dt * 2.8); camera.position.x += (S.p[0] - camera.position.x) * kc; camera.position.y += (S.p[1] - camera.position.y) * kc; camera.position.z += (S.p[2] - camera.position.z) * kc;
     camera.position.y += Math.sin(t * 1.3) * .004; camera.position.x += Math.sin(t * .7) * .003;
-    camLook.x += (S.l[0] - camLook.x) * .05; camLook.y += (S.l[1] - camLook.y) * .05; camLook.z += (S.l[2] - camLook.z) * .05; camera.lookAt(camLook);
+    const kl = 1 - Math.exp(-dt * 3); camLook.x += (S.l[0] - camLook.x) * kl; camLook.y += (S.l[1] - camLook.y) * kl; camLook.z += (S.l[2] - camLook.z) * kl; camera.lookAt(camLook);
     carts.forEach((c, i) => {
       const ty = c.userData.ty, id = c.userData.id, hov = hoverKey === 'cart:' + id && !insertId;
       const floaty = (mode === 'types' && !insertId) ? Math.sin(t * 1.4 + i * .9) * .06 : (mode === 'portal' || mode === 'recipe') ? Math.sin(t * 1.6 + i) * .12 : 0;

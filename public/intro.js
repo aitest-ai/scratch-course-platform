@@ -1,5 +1,6 @@
 // 開幕導覽 v3：RPG 一句一框對話＋第一人稱。被卡帶吸進「星光遊戲工作室」→ 為什麼做遊戲 → 拆開遊戲看積木 → 四要素 → 客人與樣品 → 訂單規格 → Bug 與麻煩事件 → 接單出發
 import {GAMES, META, sfx, setMuted, isMuted} from '/minigames.js';
+import {SKETCH} from '/sketches.js';
 
 const $ = s => document.querySelector(s);
 function h(tag, attrs, ...kids) {
@@ -21,10 +22,10 @@ const SPARE = {parkour: {title: '跑酷', color: '#e8883a'}, puzzle: {title: '�
 const info = id => META[id] || SPARE[id];
 // 四位客人 = 四款遊戲（每句話一個對話框）
 const CUSTOMERS = {
-  mei: {game: 'catch', job: '水果攤老闆娘', x: -3.2, z: -0.3, lines: ['我的水果攤要做促銷！', '想要一款「接水果」遊戲，客人玩了才會進來！']},
-  ting: {game: 'slice', job: '道場主人', x: -1.1, z: 0.2, lines: ['我的道場要讓徒弟練手速。', '幫我做一款「切水果」吧！']},
-  lin: {game: 'dodge', job: '太空站站長', x: 1.1, z: 0.2, lines: ['太空站被隕石包圍了！', '我需要一款「躲隕石」遊戲來訓練新人。']},
-  yu: {game: 'fight', job: '冒險隊長', x: 3.2, z: -0.3, lines: ['怪物要攻進來啦！', '給我一款能發射子彈的「打怪」遊戲！']}
+  mei: {game: 'catch', job: '水果攤老闆娘', x: -2.1, z: 1.8, intro: '在街角賣了三十年水果，嗓門大、手腳快，最怕水果賣不完。', say: '「就是……水果會從天上掉下來，然後……要很好玩！」', want: ['水果一個一個從上面掉下來', '玩的人用籃子左右移動去接', '接到水果就加分，接到炸彈會扣命']},
+  ting: {game: 'slice', job: '道場主人', x: -0.7, z: 1.8, intro: '道場裡最嚴格的師父，每天盯著徒弟練手速，最愛說「再快一點」。', say: '「要有那種……咻！一刀砍下去，很爽的感覺！」', want: ['水果被丟到空中', '用滑鼠劃過去就把水果切開', '切到炸彈會扣命']},
+  lin: {game: 'dodge', job: '太空站站長', x: 0.7, z: 1.8, intro: '在太空站待了十年，什麼風浪都見過，只怕新人被隕石撞到。', say: '「石頭一直打過來，我的人要想辦法躲開，躲越久越厲害。」', want: ['隕石從上面不停掉下來', '玩的人移動太空船去躲', '撐越久，分數越高']},
+  yu: {game: 'fight', job: '冒險隊長', x: 2.1, z: 1.8, intro: '帶著隊伍到處打怪的老手，說話很大聲，從來不怕怪物。', say: '「我要發射子彈！把怪物通通打趴！」', want: ['英雄在下面左右移動', '按空白鍵發射子彈打怪物', '怪物越來越多，血量用完就輸']}
 };
 
 let view = null;
@@ -87,7 +88,7 @@ function go(i) {
 }
 function panel(...kids) { const c = $('#card'); c.replaceChildren(...kids); c.classList.remove('in'); void c.offsetWidth; c.classList.add('in'); }
 const nav = (back, next) => h('div', {class: 'row'}, back ? h('button', {class: 'btn sec', onclick: back}, '上一步') : h('span'), next);
-const stage = shot => { if (!view) return; view.enterRoom(); view.layout('none'); (view.actors.boss || view.addActor('boss', 0, -1.8, {face: .5})); view.shot(shot || 'boss'); };
+const stage = shot => { if (!view) return; view.enterRoom(); view.props(true); view.layout('none'); (view.actors.boss || view.addActor('boss', 0, -1.8, {face: .5})); view.shot(shot || 'boss'); };
 
 /* ---------- 步驟 1：掉進去 ---------- */
 async function stepFall(tk) {
@@ -212,21 +213,36 @@ async function stepCustomers(tk) {
     nb.disabled = !ids.every(k => S.played[CUSTOMERS[k].game]);
   };
   refreshTypes();
+  const lobby = () => panel(h('h2', {}, '四位客人，四種遊戲'), h('div', {class: 'lead'}, '👆 點一位站在櫃檯前面的客人，聽他想要什麼。'), played, nav(() => go(3), nb));
+  // 站到櫃檯後面、老闆旁邊，看向店門口的客人
   if (view) {
-    view.enterRoom(); view.layout('types'); view.addActor('boss', 0, -1.8, {face: .5}); view.shot('customers');
-    ids.forEach((k, i) => { const c = CUSTOMERS[k]; view.addActor(k, 9.5 + i * 1.2, c.z, {face: 0}).then(a => { a.speed = 2.6 + i * .2; setTimeout(() => a.goto(c.x, c.z, 0), i * 650); }); });
+    view.enterRoom(); view.layout('types'); view.props(false);
+    const bo = view.actors.boss || await view.addActor('boss', 0, -1.8, {face: .5});
+    bo.tx = 1.6; bo.tz = -2.3; bo.g.position.set(1.6, 0, -2.3); bo.face = -.2; bo.g.rotation.y = -.2;
+    view.shot('desk');
   }
-  await talk([B('客人上門了！'), B('每個人想要的遊戲都不一樣。'), B('點一位客人聽他的需求，我們把樣品卡帶插進舊街機。'), B('四款都玩過，才能繼續。灰色卡帶是還沒到期的訂單，先放著。')], tk);
+  await talk([B('好，那事不宜遲，我們就來看看這些顧客們的需求吧！')], tk);
   if (dead(tk)) return;
-  panel(h('h2', {}, '四位客人，四種遊戲'), h('div', {class: 'lead'}, '👆 點一位站在前面的客人，聽他的訂單，再試玩樣品。'), played, nav(() => go(3), nb));
+  if (view) {
+    view.shot('customers');
+    ids.forEach((k, i) => { const c = CUSTOMERS[k]; view.addActor(k, (i - 1.5) * 1.0, 5.0, {face: Math.PI}).then(a => { a.speed = 2.8; setTimeout(() => a.goto(c.x, c.z, Math.PI), 500 + i * 700); }); });
+    await wait(4200);
+  }
+  await talk([B('客人上門了！'), B('每個人想要的遊戲都不一樣，點一位來聽聽他的需求。'), B('四款樣品都試玩過，才能繼續。')], tk);
+  if (dead(tk)) return;
+  lobby();
   let busy = false;
-  view && view.pickCb(async p => {
-    if (p.kind !== 'npc' || busy) return; busy = true;
-    const k = p.id, c = CUSTOMERS[k];
-    sfx('right'); view.actors[k].once('Interact');
-    await talk(c.lines.map(t => ({w: c.job, t})), tk);
-    busy = false; if (dead(tk)) return; openGame(c.game);
-  });
+  const brief = k => {
+    const c = CUSTOMERS[k], m = META[c.game]; busy = true; sfx('right'); view && (view.actors[k].once('Interact'), view.focus(k));
+    const back = h('button', {class: 'btn sec', onclick: () => { sfx('whoosh'); view && view.unfocus(); busy = false; $('#brief').hidden = true; $('#card').style.display = ''; }}, '← 看看其他客人');
+    const play = h('button', {class: 'btn', onclick: () => { $('#brief').hidden = true; $('#card').style.display = ''; busy = false; view && view.unfocus(); openGame(c.game); }}, `▶ 試玩「${m.title}」樣品卡帶`);
+    const B2 = $('#brief'); B2.hidden = false; $('#card').style.display = 'none';
+    B2.replaceChildren(h('div', {class: 'bsk'}, h('div', {class: 'bcap'}, '客人畫的草圖（他說：就是這種感覺）'), h('div', {class: 'bimg', html: SKETCH[c.game]})),
+      h('div', {class: 'btxt'}, h('div', {class: 'bname', style: `border-color:${m.color}`}, h('b', {}, c.job), h('span', {}, '委託人')),
+        h('p', {class: 'bintro'}, c.intro), h('p', {class: 'bsay'}, c.say), h('div', {class: 'bwant'}, h('b', {}, '想要的效果'), h('ul', {}, c.want.map(w => h('li', {}, w)))),
+        h('div', {class: 'row'}, back, play)));
+  };
+  view && view.pickCb(p => { if (p.kind === 'npc' && !busy) brief(p.id); });
   if (!view) { toast('3D 無法顯示，直接點下面的按鈕試玩'); panel(h('h2', {}, '四位客人，四種遊戲'), played, h('div', {class: 'row'}, ...ids.map(k => h('button', {class: 'btn sec', onclick: () => openGame(CUSTOMERS[k].game)}, CUSTOMERS[k].job))), nav(() => go(3), nb)); }
 }
 
@@ -291,7 +307,7 @@ async function stepBug(tk) {
   if (!S.caught) {
     await talk([B('最後一件事！'), B('工作室有個頭痛人物，叫做 Bug 怪。'), B('程式只要有一點點錯，他就跑出來搗亂。'), B('快看，他來了！點一下桌上亂跑的那隻，把他抓起來！')], tk);
     if (dead(tk)) return;
-    if (view) { view.bug(true); view.pickCb(async p => { if (p.kind === 'bug') { view.bugCaught(); view.pickCb(null); S.caught = true; save(); sfx('combo'); view.actors.boss && view.actors.boss.once('Cheer'); render(); await talk([B('抓到了！幹得好！'), B('不過 Bug 怪只是在提醒你哪裡寫錯了。'), B('接單的路上還會碰到各種麻煩事件，來練習怎麼處理吧！')], tk); } }); } else S.caught = true;
+    if (view) { view.bug(true); view.pickCb(async p => { if (p.kind === 'bug') { view.bugCaught(); view.pickCb(null); S.caught = true; save(); sfx('combo'); view.actors.boss && view.actors.boss.once('Cheer'); render(); await talk([B('抓到了！太棒了！'), B('不過 Bug 怪只是在提醒你哪裡寫錯了。'), B('接單的路上還會碰到各種麻煩事件，來練習怎麼處理吧！')], tk); } }); } else S.caught = true;
   } else { view && view.bug(false); }
   render();
   if (Object.keys(S.bugs).length === SC.length) nb.disabled = false;

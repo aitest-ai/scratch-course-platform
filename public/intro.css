@@ -100,3 +100,19 @@ body.flat #gl{display:none}body.flat{overflow:auto}
 #dlgnext{position:absolute;right:22px;bottom:10px;color:var(--gold);font-size:22px;animation:bob .8s infinite}
 @keyframes bob{50%{transform:translateY(5px)}}
 #card{max-height:56vh}
+
+/* ---- 客人需求卡：左手繪草圖、右簡介 ---- */
+#brief{position:fixed;right:20px;top:72px;z-index:7;width:min(640px,calc(100vw - 40px));display:grid;grid-template-columns:1fr 1fr;gap:14px;background:#fffaf0;border:4px solid var(--ink);border-radius:18px;padding:16px;box-shadow:0 10px 30px #0008;animation:dlgin2 .3s ease-out}
+#brief[hidden]{display:none}
+@keyframes dlgin2{from{opacity:0;transform:translateX(30px)}to{opacity:1}}
+.bsk .bcap{font-size:13px;color:#7a6a50;margin-bottom:6px;font-weight:700}
+.bimg{background:#fff;border:3px solid #e4d8bc;border-radius:10px;padding:6px;box-shadow:0 3px 0 #0002}
+.bimg svg{width:100%;display:block}
+.btxt{display:flex;flex-direction:column;gap:8px}
+.bname{display:flex;align-items:baseline;gap:8px;border-left:8px solid;padding-left:10px;font-size:20px}
+.bname span{font-size:13px;color:#8a7a60}
+.bintro{margin:0;font-size:15px;line-height:1.6;color:#3a3150}
+.bsay{margin:0;font-size:15px;line-height:1.6;background:#fff3c6;border-radius:10px;padding:8px 10px;color:#5a3a10}
+.bwant{font-size:15px}.bwant ul{margin:4px 0 0;padding-left:20px;line-height:1.7}
+#brief .row{margin-top:auto;display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:760px){#brief{grid-template-columns:1fr;top:auto;bottom:12px;right:50%;transform:translateX(50%);max-height:70vh;overflow:auto}}
