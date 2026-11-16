@@ -108,7 +108,7 @@
 
   /* ---------- 素材直接加進角色 ---------- */
   function addFruit() {
-    if (!vm || !vm.editingTarget) return;
+    if (!vm) return;
     var svg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="90" viewBox="0 0 80 90">' +
       '<path d="M40 14 C 12 10, 4 40, 10 60 C 16 82, 34 86, 40 80 C 46 86, 64 82, 70 60 C 76 40, 68 10, 40 14 Z" fill="#e8483a" stroke="#7a1f16" stroke-width="3"/>' +
@@ -121,10 +121,34 @@
       new TextEncoder().encode(svg), null, true
     );
     var md5ext = asset.assetId + '.svg';
-    return vm.addCostume(md5ext, {
-      name: '蘋果', md5: md5ext, assetId: asset.assetId, asset: asset,
-      dataFormat: 'svg', rotationCenterX: 40, rotationCenterY: 45, bitmapResolution: 1
-    }, vm.editingTarget.id);
+    // 一律建立「新角色」，不會誤加到舞台背景，也不會覆蓋別的角色
+    var sprite = {
+      isStage: false, name: '水果', variables: {}, lists: {}, broadcasts: {}, blocks: {},
+      comments: {}, currentCostume: 0,
+      costumes: [{ name: '暫存', bitmapResolution: 1, dataFormat: 'svg', assetId: asset.assetId,
+                   md5ext: md5ext, rotationCenterX: 40, rotationCenterY: 45 }],
+      sounds: [], volume: 100, layerOrder: 1, visible: true, x: 0, y: 0, size: 100,
+      direction: 90, draggable: false, rotationStyle: 'all around'
+    };
+    return vm.addSprite(JSON.stringify(sprite)).then(function () {
+      var t = vm.editingTarget;
+      return vm.addCostume(md5ext, {
+        name: '蘋果', md5: md5ext, assetId: asset.assetId, asset: asset,
+        dataFormat: 'svg', rotationCenterX: 40, rotationCenterY: 45, bitmapResolution: 1
+      }, t.id).then(function () { return t.deleteCostume(0); });
+    }).then(function () {
+      say('已加入新角色「水果」，在右下角的角色清單裡。');
+    }).catch(function (e) {
+      say('加入失敗：' + (e && e.message ? e.message : e));
+    });
+  }
+
+  function say(msg) {
+    var ul = document.getElementById('results');
+    var li = document.createElement('li');
+    li.className = 'info';
+    li.textContent = msg;
+    ul.insertBefore(li, ul.firstChild);
   }
 
   document.getElementById('btnCheck').addEventListener('click', check);
