@@ -16,7 +16,7 @@ const L0 = (() => { try { return JSON.parse(localStorage.getItem('ninja-l0-v2'))
 const introDone = !!(L0.done && L0.done[7]);
 const SHOPS = [
   {id: 'intro', title: '開幕導覽', sub: introDone ? '已看過' : '先來認識遊戲', open: true, href: '/intro.html', hue: 0xffc83d},
-  {id: 'catch', title: '接東西', sub: '接住掉下來的水果', open: true, href: '/level1.html', hue: 0xe8483a},
+  {id: 'catch', title: '接東西', sub: '接住掉下來的水果', open: true, href: '/order1.html', hue: 0xe8483a},
   {id: 'slice', title: '切水果', sub: '等老師開放', open: false, hue: 0x3fb87a},
   {id: 'dodge', title: '躲隕石', sub: '等老師開放', open: false, hue: 0x3b7fe0},
   {id: 'fight', title: '打怪', sub: '等老師開放', open: false, hue: 0x9b59d0}
@@ -37,7 +37,7 @@ function renderUi() {
     el.className = 'mod' + (has ? ' got' : ''); el.textContent = has ? m.name : '？'; el.title = has ? '已解鎖' : '在「接東西」通過基本版後解鎖'; return el;
   }));
   if (!introDone && !doneCount) { $('go').textContent = '先去「開幕導覽」▶'; $('go').href = '/intro.html'; }
-  else { $('go').href = '/level1.html'; $('go').textContent = !doneCount ? '進「接東西」▶' : (done[7] ? '再玩一次「接東西」▶' : '繼續「接東西」▶'); }
+  else { $('go').href = '/order1.html'; $('go').textContent = !doneCount ? '進「接東西」▶' : (done[7] ? '再玩一次「接東西」▶' : '繼續「接東西」▶'); }
 }
 renderUi();
 
