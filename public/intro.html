@@ -3,13 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>遊戲街機城｜開幕導覽</title>
+<title>星光遊戲工作室｜開幕導覽</title>
 <link rel="stylesheet" href="/intro.css">
 </head>
 <body>
 <canvas id="gl"></canvas>
-<header id="top"><div class="brand"><a href="/">遊戲街機城</a><small>開幕導覽</small></div><div id="steps"></div><div class="who"></div></header>
+<header id="top"><div class="brand"><a href="/">遊戲街機城</a><small>開幕導覽</small></div><div id="steps" hidden></div><button id="mute" title="音效開關">🔊</button></header>
+<div id="flash"></div>
 <main id="card"></main>
+<div id="dlg" hidden>
+  <div id="dlgname" class="nameplate"></div>
+  <div id="dlgtext"></div>
+  <div id="dlgchoices"></div>
+  <div id="dlgnext" hidden>▼</div>
+</div>
 <div id="modal" hidden>
   <div class="screen">
     <div class="bar"><b id="gtitle"></b><button id="gclose" class="btn sec">關閉</button></div>

@@ -12,8 +12,8 @@ const MODS = [
   {k: 'modBomb', name: '炸彈', color: 0x8a8cff},
   {k: 'modSpeed', name: '加速', color: 0xffd23f}
 ];
-const L0 = (() => { try { return JSON.parse(localStorage.getItem('ninja-l0-v1')) || {}; } catch (e) { return {}; } })();
-const introDone = !!(L0.done && L0.done[4]);
+const L0 = (() => { try { return JSON.parse(localStorage.getItem('ninja-l0-v2')) || {}; } catch (e) { return {}; } })();
+const introDone = !!(L0.done && L0.done[7]);
 const SHOPS = [
   {id: 'intro', title: '開幕導覽', sub: introDone ? '已看過' : '先來認識遊戲', open: true, href: '/intro.html', hue: 0xffc83d},
   {id: 'catch', title: '接東西', sub: '接住掉下來的水果', open: true, href: '/level1.html', hue: 0xe8483a},

@@ -1,5 +1,5 @@
-// 開幕導覽：故事 → 遊戲是什麼 → 遊戲類型（卡帶試玩）→ 配方卡 → 插卡帶進店
-import {GAMES, META} from '/minigames.js';
+// 開幕導覽 v3：RPG 一句一框對話＋第一人稱。被卡帶吸進「星光遊戲工作室」→ 為什麼做遊戲 → 拆開遊戲看積木 → 四要素 → 客人與樣品 → 訂單規格 → Bug 與麻煩事件 → 接單出發
+import {GAMES, META, sfx, setMuted, isMuted} from '/minigames.js';
 
 const $ = s => document.querySelector(s);
 function h(tag, attrs, ...kids) {
@@ -9,104 +9,232 @@ function h(tag, attrs, ...kids) {
   return e;
 }
 function toast(t) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { e.hidden = true; }, 3000); }
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
-const STEPS = ['開幕故事', '遊戲是什麼', '遊戲類型', '配方卡', '出發'];
-const KEY = 'ninja-l0-v1';
+const KEY = 'ninja-l0-v2';
 let S = null; try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { /* 第一次 */ }
-S = S || {step: 0, done: [], played: {}, quiz: false};
+S = Object.assign({step: 0, done: [], played: {}, name: '', why: {}, lit: {}, quiz: false, bugs: {}, caught: false}, S || {});
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 不影響 */ } };
 
 const CART_IDS = ['catch', 'slice', 'dodge', 'fight', 'parkour', 'puzzle'];
 const SPARE = {parkour: {title: '跑酷', color: '#e8883a'}, puzzle: {title: '益智', color: '#3aa8a8'}};
 const info = id => META[id] || SPARE[id];
+// 四位客人 = 四款遊戲（每句話一個對話框）
+const CUSTOMERS = {
+  mei: {game: 'catch', job: '水果攤老闆娘', x: -3.2, z: -0.3, lines: ['我的水果攤要做促銷！', '想要一款「接水果」遊戲，客人玩了才會進來！']},
+  ting: {game: 'slice', job: '道場主人', x: -1.1, z: 0.2, lines: ['我的道場要讓徒弟練手速。', '幫我做一款「切水果」吧！']},
+  lin: {game: 'dodge', job: '太空站站長', x: 1.1, z: 0.2, lines: ['太空站被隕石包圍了！', '我需要一款「躲隕石」遊戲來訓練新人。']},
+  yu: {game: 'fight', job: '冒險隊長', x: 3.2, z: -0.3, lines: ['怪物要攻進來啦！', '給我一款能發射子彈的「打怪」遊戲！']}
+};
 
-let view = null; // 3D 控制：{mode, pick, insert}
-function renderSteps() {
-  const n = $('#steps'); n.replaceChildren(...STEPS.map((name, i) => h('div', {class: 'dot' + (i === S.step ? ' cur' : '') + (S.done[i] ? ' done' : '')}, h('b', {}, S.done[i] ? '✓' : String(i + 1)), name)));
+let view = null;
+const boss = () => view && view.actors.boss;
+const cheer = () => { const b = boss(); b && b.once('Cheer'); sfx('right'); };
+const nm = () => S.name || '新人';
+
+/* ---------- RPG 對話引擎 ---------- */
+let token = 0;                       // go() 時加一，讓舊對話自動作廢
+const dead = tk => tk !== token;
+const dlg = () => $('#dlg');
+let skipFn = null;
+function showLine(l, tk) {
+  return new Promise(res => {
+    const d = dlg(); d.hidden = false; d.classList.remove('out'); $('#card').classList.add('mute');
+    const who = l.w === undefined ? 'boss' : l.w;
+    const np = $('#dlgname'); np.textContent = who === 'boss' ? '老闆' : (who || ''); np.hidden = !who; np.className = 'nameplate ' + (who === 'boss' ? 'boss' : 'npc');
+    d.classList.toggle('narr', !who);
+    const tx = $('#dlgtext'), ch = $('#dlgchoices'), nx = $('#dlgnext');
+    tx.textContent = ''; ch.replaceChildren(); nx.hidden = true;
+    if (l.do) l.do();
+    const full = l.t; let i = 0, typing = true, timer = null;
+    const finish = () => {
+      typing = false; clearInterval(timer); tx.textContent = full;
+      if (l.choices) {
+        l.choices.forEach((c, ci) => ch.append(h('button', {class: 'dchoice', onclick: () => { skipFn = null; sfx('right'); res(ci); }}, c)));
+        skipFn = null;
+      } else if (l.input) {
+        const inp = h('input', {id: 'nm', maxlength: '8', placeholder: '輸入你的名字', value: S.name, autocomplete: 'off'});
+        const ok = () => { const v = inp.value.trim(); if (!v) { toast('先告訴老闆你叫什麼名字吧'); return; } skipFn = null; sfx('right'); res(v); };
+        inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') ok(); };
+        ch.append(inp, h('button', {class: 'dchoice', onclick: ok}, '回答'));
+        setTimeout(() => inp.focus(), 50); skipFn = null;
+      } else { nx.hidden = false; skipFn = () => { skipFn = null; res(); }; }
+    };
+    timer = setInterval(() => { if (dead(tk)) { clearInterval(timer); res('x'); return; } i++; tx.textContent = full.slice(0, i); if (i % 2 === 0) sfx('blip'); if (i >= full.length) finish(); }, 34);
+    skipFn = () => { if (typing) { finish(); } };
+    d.onclick = e => { if (e.target.closest('.dchoice,input')) return; advance(); };
+  });
 }
-function done(i) { S.done[i] = true; save(); renderSteps(); }
+function advance() { if (skipFn) skipFn(); }
+addEventListener('keydown', e => { if (e.target && e.target.tagName === 'INPUT') return; if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') { e.preventDefault(); advance(); } });
+// 依序演出一串台詞；回傳最後一個有輸入／選擇的結果
+async function talk(lines, tk = token) {
+  let out;
+  for (const l of lines) { if (dead(tk)) return 'x'; out = await showLine(typeof l === 'string' ? {t: l} : l, tk); if (out === 'x') return 'x'; }
+  if (!dead(tk)) hideDlg();
+  return out;
+}
+function hideDlg() { const d = dlg(); d.hidden = true; $('#card').classList.remove('mute'); skipFn = null; }
+const B = (t, o) => Object.assign({w: 'boss', t}, o || {});          // 老闆說
+const N = (t, o) => Object.assign({w: '', t}, o || {});              // 旁白
+
+function done(i) { S.done[i] = true; save(); }
 function go(i) {
-  S.step = i; save(); renderSteps();
-  [stepStory, stepWhat, stepTypes, stepRecipe, stepGo][i]();
+  token++; closeGame(); stopX && stopX(); hideDlg();
+  S.step = i; save(); sfx('whoosh');
+  const c = $('#card'); c.replaceChildren(); c.classList.remove('in');
+  [stepFall, stepWhy, stepXray, stepWhat, stepCustomers, stepRecipe, stepBug, stepGo][i](token);
+}
+function panel(...kids) { const c = $('#card'); c.replaceChildren(...kids); c.classList.remove('in'); void c.offsetWidth; c.classList.add('in'); }
+const nav = (back, next) => h('div', {class: 'row'}, back ? h('button', {class: 'btn sec', onclick: back}, '上一步') : h('span'), next);
+const stage = shot => { if (!view) return; view.enterRoom(); view.layout('none'); (view.actors.boss || view.addActor('boss', 0, -1.8, {face: .5})); view.shot(shot || 'boss'); };
+
+/* ---------- 步驟 1：掉進去 ---------- */
+async function stepFall(tk) {
+  if (!S.name) {
+    view && (view.layout('portal'), view.shot('portal'));
+    const r = await talk([
+      N('你正準備上 Scratch 課。'), N('突然，螢幕閃了一下！'),
+      N('一張發光的遊戲卡帶從裡面飛了出來，繞著你轉。', {choices: ['伸手摸摸卡帶']})], tk);
+    if (dead(tk)) return;
+    sfx('boot'); if (view) { view.flash(900); stage('boss'); view.actors.boss && view.actors.boss.once('Cheer'); }
+    await wait(500);
+    const nameIn = await talk([
+      N('……咦？這裡是哪裡？'), N('眼前是一間燈光昏暗的工作室。'),
+      B('哇！有人！太好了！'), B('我是這間「星光遊戲工作室」的老闆。'),
+      B('你叫什麼名字？', {input: true})], tk);
+    if (dead(tk)) return;
+    S.name = nameIn; save();
+  } else stage('boss');
+  const r2 = await talk([
+    B(`${nm()}，好名字！`), B('老實說，工作室快倒閉了……', {do: () => view && view.shot('cabinet')}),
+    B('店裡唯一那台舊街機當機了，畫面全是亂碼。'), B('訂單堆成山，我只會收訂單，不會做遊戲。', {do: () => view && view.shot('boss')}),
+    B('但我看得出來，你是做遊戲的料！'),
+    B('來當我的見習設計師，好不好？', {choices: ['好，我來幫忙！', '當設計師要做什麼？']})], tk);
+  if (dead(tk)) return;
+  if (r2 === 1) await talk([B('做出客人想要的遊戲就行！'), B('我會一步一步教你，放心。', {choices: ['好，我來幫忙！']})], tk);
+  if (dead(tk)) return;
+  cheer(); view && view.burst({x: 0, y: 2, z: -1.8}, 0xffc83d, 60, 4); done(0); go(1);
 }
 
-/* ---------- 步驟 1：故事 ---------- */
-function stepStory() {
-  view && view.mode('story');
-  const pages = [
-    ['街機城剛開幕！', '可是老闆遇到一個大麻煩：店裡所有的遊戲機都壞了，因為沒有人會做遊戲。'],
-    ['老闆在找學徒', '他需要一位「遊戲設計師學徒」。做出好玩的遊戲，街機城才會熱鬧起來。這個學徒，就是你。'],
-    ['先搞懂，再動手', '不過在動手之前，老闆要先考考你：遊戲到底是什麼？有哪幾種？它們是怎麼做出來的？']
+/* ---------- 步驟 2：為什麼做遊戲 ---------- */
+async function stepWhy(tk) {
+  stage('pair');
+  await talk([B(`${nm()}，動手之前，先回答你心裡可能在想的問題。`), B('為什麼要學做遊戲？'), B('我準備了五張卡片，一張一張點開看看！')], tk);
+  if (dead(tk)) return;
+  const R = [
+    ['🎮', '從玩家變成創作者', '玩別人的遊戲，只能照別人的規則玩。自己做遊戲，規則你說了算：蘋果掉多快、怪物長什麼樣，都是你決定。'],
+    ['🔧', '像工程師一樣解決問題', '遊戲做出來不會一次就對，常會冒出 Bug。找出哪裡壞掉、想辦法修好，就是軟體工程師每天在做的事。'],
+    ['💡', '想法變成真的', '腦袋裡的點子，一堂課之後就能在螢幕上動起來，還能讓別人玩得很開心。'],
+    ['🧠', '學到的東西到處能用', '你用積木學到的「變數、迴圈、條件」，跟手機遊戲、Python 程式用的是同一套想法。'],
+    ['🏆', '還有大獎等著你', '做完訂單可以賺金幣，把工作室和你的機台升級得超酷。最後，你的遊戲會放上真正的街機機台，用搖桿來玩！']
   ];
-  let p = 0;
-  const card = $('#card'); const draw = () => {
-    card.replaceChildren(h('span', {class: 'tag'}, `第 1 步・開幕故事（${p + 1}/3）`), h('h2', {}, pages[p][0]), h('div', {class: 'lead'}, pages[p][1]),
-      h('div', {class: 'row'}, p ? h('button', {class: 'btn sec', onclick: () => { p--; draw(); }}, '上一頁') : h('span'),
-        h('button', {class: 'btn', onclick: () => { if (p < 2) { p++; draw(); } else { done(0); go(1); } }}, p < 2 ? '下一頁' : '好，先來學')));
-  };
-  draw();
+  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = async () => { await talk([B('五個理由都看完啦！'), B('接下來，我帶你看遊戲的「內臟」。')], tk); if (dead(tk)) return; done(1); go(2); };
+  const box = h('div', {class: 'why'});
+  const refresh = () => { nb.disabled = Object.keys(S.why).length < R.length; box.replaceChildren(...R.map((r, i) => h('button', {class: 'wcard' + (S.why[i] ? ' open' : '') + (i === 4 && Object.keys(S.why).length < 4 ? ' lock' : ''), onclick: () => { if (i === 4 && Object.keys(S.why).length < 4) { toast('先看完前面四張，才能看到大獎！'); sfx('wrong'); return; } if (!S.why[i]) { S.why[i] = 1; save(); sfx('right'); boss() && boss().once(i === 4 ? 'Cheer' : 'Interact'); view && view.burst({x: 1.4, y: 1.4, z: 0}, 0xffc83d, 24, 3); } refresh(); }},
+    h('b', {}, r[0] + ' ' + (S.why[i] || i < 4 ? r[1] : '？？？')), S.why[i] ? h('div', {class: 'wtxt'}, r[2]) : h('div', {class: 'wtxt dim'}, i === 4 ? '看完前四張就會解鎖' : '點開看看')))); };
+  refresh();
+  panel(h('h2', {}, '老闆的五個理由'), box, nav(() => go(0), nb));
 }
 
-/* ---------- 步驟 2：遊戲是什麼 ---------- */
-function stepWhat() {
-  view && view.mode('what');
+/* ---------- 步驟 3：拆開遊戲看積木 ---------- */
+let stopX = null;
+async function stepXray(tk) {
+  stage('pair');
+  await talk([B('給你看個祕密。'), B('遊戲裡每件事，背後都是一塊積木在指揮。'), B('你玩玩看，哪塊積木工作了，右邊就會亮起來！')], tk);
+  if (dead(tk)) return;
+  const BL = [['move', '按下 ← → 鍵', '改變 x 座標，籃子就會動'], ['clone', '建立分身', '一顆顆蘋果和炸彈一直掉下來'], ['catch', '碰到 籃子？', '是的話：分數 +1'], ['bomb', '碰到 炸彈？', '是的話：生命 −1'], ['miss', '碰到 地板？', '蘋果漏接：生命 −1'], ['speed', '如果 分數是 5 的倍數', '掉落速度加快']];
+  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = async () => { await talk([B('看到了吧？每個動作都是一塊積木。'), B('接下來要學「怎麼看懂一個遊戲」。')], tk); if (dead(tk)) return; done(2); go(3); };
+  const list = h('div', {class: 'xlist'});
+  const chips = {};
+  BL.forEach(([k, t, d]) => { chips[k] = h('div', {class: 'xb' + (S.lit[k] ? ' got' : '')}, h('b', {}, '🧩 ' + t), h('span', {}, d)); list.append(chips[k]); });
+  const prog = h('div', {class: 'xprog'});
+  const upd = () => { const n = Object.keys(S.lit).length; prog.textContent = `已經點亮 ${n}／6 塊積木（點亮 4 塊就能繼續）`; nb.disabled = n < 4; };
+  const fire = k => { if (!chips[k]) return; chips[k].classList.remove('lit'); void chips[k].offsetWidth; chips[k].classList.add('lit'); if (!S.lit[k]) { S.lit[k] = 1; chips[k].classList.add('got'); save(); upd(); sfx('combo'); } };
+  const cv = h('canvas', {width: '480', height: '360', class: 'xcv'});
+  const play = h('button', {class: 'btn', onclick: () => {
+    stopX && stopX(); play.textContent = '再玩一次';
+    const kd = e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') fire('move'); }; window.addEventListener('keydown', kd);
+    const st = GAMES.catch(cv, () => { play.disabled = false; }, fire); stopX = () => { st(); window.removeEventListener('keydown', kd); stopX = null; };
+  }}, '▶ 開始試玩');
+  upd();
+  panel(h('h2', {}, '每個動作，都是一塊積木'), h('div', {class: 'xwrap'}, h('div', {class: 'xleft'}, cv, play), list), prog, nav(() => go(1), nb));
+}
+
+/* ---------- 步驟 4：遊戲四要素 ---------- */
+async function stepWhat(tk) {
+  stage('pair');
+  await talk([B('做遊戲前，先學會「看」遊戲。'), B('不管客人的需求多亂，都逃不出四樣東西。'), B('先看看這四張卡，再來考考你！')], tk);
+  if (dead(tk)) return;
   const els = [['玩家', '你控制的東西', '例：籃子'], ['場上的東西', '會出現、會動的東西', '例：蘋果、炸彈'], ['規則', '碰到會發生什麼事', '例：接到蘋果加分'], ['勝負', '什麼時候結束、算贏還是輸', '例：三條命用完']];
   const items = [['籃子', 0], ['掉下來的蘋果和炸彈', 1], ['接到蘋果就加 1 分', 2], ['三條命用完，遊戲結束', 3], ['碰到炸彈少一條命', 2]];
   let right = 0;
-  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = () => { done(1); go(2); };
-  const card = $('#card');
-  card.replaceChildren(h('span', {class: 'tag'}, '第 2 步・遊戲是什麼'), h('h2', {}, '每個遊戲都有四樣東西'),
+  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = async () => { await talk([B('四要素你都學會了！'), B('客人已經在門口排隊了，我們去看看。')], tk); if (dead(tk)) return; done(3); go(4); };
+  panel(h('h2', {}, '遊戲四要素：下面「接水果」裡的東西，各是哪一種？'),
     h('div', {class: 'grid4'}, els.map(e => h('div', {class: 'el'}, h('b', {}, e[0]), e[1], h('br'), e[2]))),
-    h('div', {class: 'lead', style: 'font-size:16px;margin:4px 0'}, '來考考你：下面是「接水果」裡的東西，它們各是哪一種？'),
     ...items.map(([t, a]) => {
       const row = h('div', {class: 'item'}, h('div', {class: 't'}, t));
       els.forEach((e, i) => row.append(h('button', {onclick: () => {
         if (row.classList.contains('right')) return;
-        if (i === a) { row.className = 'item right'; row.querySelectorAll('button').forEach(b => { b.disabled = true; }); row.append(h('b', {style: 'color:#1f6a43'}, '✓ ' + e[0])); if (++right === items.length) { nb.disabled = false; toast('全部答對了！'); } }
-        else { row.classList.add('wrong'); setTimeout(() => row.classList.remove('wrong'), 500); }
+        if (i === a) { row.className = 'item right'; row.querySelectorAll('button').forEach(b => { b.disabled = true; }); row.append(h('b', {style: 'color:#1f6a43'}, '✓ ' + e[0])); sfx('right'); if (++right === items.length) { nb.disabled = false; cheer(); toast('全部答對了！'); } }
+        else { row.classList.add('wrong'); sfx('wrong'); setTimeout(() => row.classList.remove('wrong'), 500); }
       }}, e[0])));
       return row;
     }),
-    h('div', {class: 'row'}, h('button', {class: 'btn sec', onclick: () => go(0)}, '上一步'), nb));
-  if (S.done[1]) nb.disabled = false;
+    nav(() => go(2), nb));
+  if (S.done[3]) nb.disabled = false;
 }
 
-/* ---------- 步驟 3：遊戲類型（卡帶） ---------- */
+/* ---------- 步驟 5：客人與樣品 ---------- */
 let stopGame = null;
 const withInsert = (id, cb) => view ? view.insert(id, cb) : cb();
 function openGame(id) {
-  const m = META[id]; if (!m) { toast(`「${SPARE[id].title}」是備用卡帶，這學期先不開放。`); return; }
+  const m = META[id];
   withInsert(id, () => {
     $('#modal').hidden = false; $('#gtitle').textContent = m.title; $('#gtip').textContent = m.tip + '（按「開始玩」）';
-    $('#gplay').disabled = false;
+    $('#gplay').disabled = false; $('#gplay').textContent = '▶ 開始玩';
     const cv = $('#game'); cv.getContext('2d').clearRect(0, 0, 480, 360);
     $('#gplay').onclick = () => {
       stopGame && stopGame(); $('#gplay').disabled = true; $('#gtip').textContent = m.tip;
-      stopGame = GAMES[id](cv, txt => { S.played[id] = true; save(); $('#gtip').textContent = `${txt}。你試玩過「${m.title}」了！可以關閉換下一張卡帶。`; $('#gplay').disabled = false; $('#gplay').textContent = '再玩一次'; refreshTypes(); });
+      stopGame = GAMES[id](cv, txt => { S.played[id] = true; save(); $('#gtip').textContent = `${txt}。你試玩過「${m.title}」了！可以關閉看下一位客人。`; $('#gplay').disabled = false; $('#gplay').textContent = '再玩一次'; refreshTypes(); });
     };
   });
 }
-function closeGame() { stopGame && stopGame(); stopGame = null; $('#modal').hidden = true; $('#gplay').textContent = '▶ 開始玩'; view && view.eject(); }
+function closeGame() { stopGame && stopGame(); stopGame = null; const m = $('#modal'); if (m && !m.hidden) { m.hidden = true; view && view.eject(); } }
 $('#gclose').onclick = closeGame;
 let refreshTypes = () => { };
-function stepTypes() {
-  view && view.mode('types', openGame);
-  const ids = Object.keys(META);
+async function stepCustomers(tk) {
+  const ids = Object.keys(CUSTOMERS);
   const played = h('div', {class: 'played'});
-  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = () => { done(2); go(3); };
+  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = async () => { await talk([B('四款樣品都試玩過了，你有感覺了吧？'), B('接單前還有一個規矩要教你。')], tk); if (dead(tk)) return; done(4); go(5); };
   refreshTypes = () => {
-    played.replaceChildren(...ids.map(id => h('span', {class: S.played[id] ? 'ok' : ''}, (S.played[id] ? '✓ ' : '') + META[id].title)));
-    nb.disabled = !ids.every(id => S.played[id]);
+    played.replaceChildren(...ids.map(k => h('span', {class: S.played[CUSTOMERS[k].game] ? 'ok' : ''}, (S.played[CUSTOMERS[k].game] ? '✓ ' : '') + `${CUSTOMERS[k].job}（${META[CUSTOMERS[k].game].title}）`)));
+    nb.disabled = !ids.every(k => S.played[CUSTOMERS[k].game]);
   };
   refreshTypes();
-  $('#card').replaceChildren(h('span', {class: 'tag'}, '第 3 步・遊戲類型'), h('h2', {}, '街機城的卡帶架'),
-    h('div', {class: 'lead', style: 'font-size:16px'}, '每一張卡帶是一種遊戲。點一張，把它插進主機，試玩看看。四款都要玩過，下一步才會打開。灰色的是備用卡帶，這學期先不開放。'),
-    played, h('div', {class: 'row'}, h('button', {class: 'btn sec', onclick: () => go(1)}, '上一步'), nb));
+  if (view) {
+    view.enterRoom(); view.layout('types'); view.addActor('boss', 0, -1.8, {face: .5}); view.shot('customers');
+    ids.forEach((k, i) => { const c = CUSTOMERS[k]; view.addActor(k, 9.5 + i * 1.2, c.z, {face: 0}).then(a => { a.speed = 2.6 + i * .2; setTimeout(() => a.goto(c.x, c.z, 0), i * 650); }); });
+  }
+  await talk([B('客人上門了！'), B('每個人想要的遊戲都不一樣。'), B('點一位客人聽他的需求，我們把樣品卡帶插進舊街機。'), B('四款都玩過，才能繼續。灰色卡帶是還沒到期的訂單，先放著。')], tk);
+  if (dead(tk)) return;
+  panel(h('h2', {}, '四位客人，四種遊戲'), h('div', {class: 'lead'}, '👆 點一位站在前面的客人，聽他的訂單，再試玩樣品。'), played, nav(() => go(3), nb));
+  let busy = false;
+  view && view.pickCb(async p => {
+    if (p.kind !== 'npc' || busy) return; busy = true;
+    const k = p.id, c = CUSTOMERS[k];
+    sfx('right'); view.actors[k].once('Interact');
+    await talk(c.lines.map(t => ({w: c.job, t})), tk);
+    busy = false; if (dead(tk)) return; openGame(c.game);
+  });
+  if (!view) { toast('3D 無法顯示，直接點下面的按鈕試玩'); panel(h('h2', {}, '四位客人，四種遊戲'), played, h('div', {class: 'row'}, ...ids.map(k => h('button', {class: 'btn sec', onclick: () => openGame(CUSTOMERS[k].game)}, CUSTOMERS[k].job))), nav(() => go(3), nb)); }
 }
 
-/* ---------- 步驟 4：配方卡 ---------- */
-function stepRecipe() {
-  view && view.mode('recipe');
+/* ---------- 步驟 6：訂單規格卡 ---------- */
+async function stepRecipe(tk) {
+  stage('pair');
+  await talk([B('客人的需求常常講得亂七八糟。'), B('所以工作室有個規矩：接單之前，先整理成一張「規格卡」。'), B('你以後做自己的遊戲，也要先畫一張。看看下面四張，再來小測驗！')], tk);
+  if (dead(tk)) return;
   const ids = Object.keys(META);
   const Q = [
     ['想讓「滑鼠劃過就切開」，要用到滑鼠的 x、y 座標。這最像哪一款？', 'slice'],
@@ -115,148 +243,76 @@ function stepRecipe() {
     ['左右鍵移動籃子，再用「分身」做出一直掉下來的東西，這最像哪一款？', 'catch']
   ];
   let ok = 0;
-  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = () => { done(3); S.quiz = true; save(); go(4); };
-  const card = $('#card');
-  card.replaceChildren(h('span', {class: 'tag'}, '第 4 步・配方卡'), h('h2', {}, '每款遊戲都有一張配方卡'),
-    h('div', {class: 'lead', style: 'font-size:16px'}, '做遊戲前，先把配方寫下來。你以後做自己的遊戲，也要先畫一張。'),
+  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = async () => { await talk([B('規格卡難不倒你！'), B('最後一堂課：認識工作室最頭痛的傢伙。')], tk); if (dead(tk)) return; done(5); S.quiz = true; save(); go(6); };
+  panel(h('h2', {}, '訂單規格卡'),
     ...ids.map(id => { const m = META[id]; return h('div', {class: 'recipe', style: `border-color:${m.color}`}, h('h3', {style: `color:${m.color}`}, m.title),
       h('div', {}, `玩家：${m.recipe.player}`), h('div', {}, `場上的東西：${m.recipe.things}`), h('div', {}, `規則：${m.recipe.rule}`), h('div', {}, `勝負：${m.recipe.end}`),
       h('div', {class: 'chips'}, m.blocks.map(b => h('span', {class: 'chip'}, '🧩 ' + b)))); }),
-    h('div', {class: 'lead', style: 'font-size:16px;margin-top:10px'}, '小測驗：配方裡的積木，分別是哪一款要用的？'),
+    h('h3', {}, '小測驗：這些積木，分別是哪一款要用的？'),
     ...Q.map(([q, a]) => {
       const row = h('div', {class: 'item'}, h('div', {class: 't'}, q));
       ids.forEach(id => row.append(h('button', {onclick: () => {
         if (row.classList.contains('right')) return;
-        if (id === a) { row.className = 'item right'; row.querySelectorAll('button').forEach(b => { b.disabled = true; }); row.append(h('b', {style: 'color:#1f6a43'}, '✓ ' + META[id].title)); if (++ok === Q.length) { nb.disabled = false; toast('配方卡難不倒你！'); } }
-        else { row.classList.add('wrong'); setTimeout(() => row.classList.remove('wrong'), 500); }
+        if (id === a) { row.className = 'item right'; row.querySelectorAll('button').forEach(b => { b.disabled = true; }); row.append(h('b', {style: 'color:#1f6a43'}, '✓ ' + META[id].title)); sfx('right'); if (++ok === Q.length) { nb.disabled = false; cheer(); toast('規格卡難不倒你！'); } }
+        else { row.classList.add('wrong'); sfx('wrong'); setTimeout(() => row.classList.remove('wrong'), 500); }
       }}, META[id].title)));
       return row;
     }),
-    h('div', {class: 'row'}, h('button', {class: 'btn sec', onclick: () => go(2)}, '上一步'), nb));
+    nav(() => go(4), nb));
   if (S.quiz) nb.disabled = false;
 }
 
-/* ---------- 步驟 5：出發 ---------- */
-function stepGo() {
-  view && view.mode('go');
-  $('#card').replaceChildren(h('span', {class: 'tag'}, '第 5 步・出發'), h('h2', {}, '老闆說：先從最簡單的開始'),
-    h('div', {class: 'lead'}, '你已經知道遊戲是什麼、有哪幾種、配方怎麼寫。老闆把「接東西」的卡帶交給你：「把它做出來吧！」'),
-    h('div', {class: 'row'}, h('button', {class: 'btn sec', onclick: () => go(3)}, '上一步'),
-      h('button', {class: 'btn', onclick: () => { done(4); withInsert('catch', () => setTimeout(() => { location.href = '/level1.html'; }, 500)); }}, '插入卡帶，進「接東西」')));
-}
-
-/* ---------- 3D：卡帶與主機 ---------- */
-async function start3d() {
-  const THREE = await import('/vendor/three.module.js');
-  const canvas = $('#gl');
-  const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75)); renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.shadowMap.enabled = true;
-  const scene = new THREE.Scene();
-  { const c = document.createElement('canvas'); c.width = 8; c.height = 256; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 256);
-    gr.addColorStop(0, '#0b0926'); gr.addColorStop(.6, '#2b2a7a'); gr.addColorStop(1, '#6a3a98'); g.fillStyle = gr; g.fillRect(0, 0, 8, 256);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; scene.background = t; }
-  const camera = new THREE.PerspectiveCamera(40, 1, .1, 100); camera.position.set(0, -1.0, 9);
-  scene.add(new THREE.HemisphereLight(0xaab0ff, 0x2a2450, 1.6));
-  const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(3, 6, 8); key.castShadow = true; scene.add(key);
-  const pl1 = new THREE.PointLight(0xff4fa3, 70, 24); pl1.position.set(-6, 2, 4); scene.add(pl1);
-  const pl2 = new THREE.PointLight(0x38e1ff, 70, 24); pl2.position.set(6, 2, 4); scene.add(pl2);
-  const grid = new THREE.GridHelper(60, 40, 0xff4fa3, 0x4a3fb0); grid.position.y = -3; scene.add(grid);
-  { const n = 160, pos = new Float32Array(n * 3); for (let i = 0; i < n; i++) { pos[i * 3] = (Math.random() - .5) * 40; pos[i * 3 + 1] = Math.random() * 16 - 3; pos[i * 3 + 2] = -Math.random() * 20; }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); scene.add(new THREE.Points(g, new THREE.PointsMaterial({color: 0xffffff, size: .08, fog: false}))); }
-
-  const FONT = '"Noto Sans TC","Microsoft JhengHei",sans-serif';
-  function labelTex(id) {
-    const m = info(id), spare = !META[id];
-    const c = document.createElement('canvas'); c.width = 256; c.height = 256; const g = c.getContext('2d');
-    g.fillStyle = spare ? '#8a8aa0' : m.color; g.fillRect(0, 0, 256, 256);
-    g.fillStyle = '#ffffff22'; for (let i = 0; i < 8; i++) g.fillRect(0, i * 36, 256, 14);
-    g.fillStyle = '#fff'; g.strokeStyle = '#1d1840'; g.lineWidth = 8; g.lineJoin = 'round';
-    g.font = `900 52px ${FONT}`; g.textAlign = 'center'; g.strokeText(m.title, 128, 64); g.fillText(m.title, 128, 64);
-    // 圖示
-    g.save(); g.translate(128, 158);
-    if (id === 'catch') { g.fillStyle = '#c98a4b'; g.beginPath(); g.moveTo(-50, 10); g.lineTo(50, 10); g.lineTo(38, 56); g.lineTo(-38, 56); g.fill(); g.fillStyle = '#e8483a'; g.beginPath(); g.arc(-18, -20, 22, 0, 7); g.arc(24, -34, 20, 0, 7); g.fill(); }
-    else if (id === 'slice') { g.fillStyle = '#e8483a'; g.beginPath(); g.arc(-14, 6, 40, 0, 7); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 9; g.beginPath(); g.moveTo(-60, -30); g.lineTo(50, 50); g.stroke(); }
-    else if (id === 'dodge') { g.fillStyle = '#5a4636'; g.beginPath(); g.arc(-26, -18, 32, 0, 7); g.arc(40, 20, 22, 0, 7); g.fill(); g.fillStyle = '#38e1ff'; g.beginPath(); g.moveTo(0, 6); g.lineTo(18, 50); g.lineTo(-18, 50); g.fill(); }
-    else if (id === 'fight') { g.fillStyle = '#d65db1'; g.beginPath(); g.arc(0, -8, 40, 0, 7); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(-14, -14, 10, 0, 7); g.arc(14, -14, 10, 0, 7); g.fill(); g.fillStyle = '#ffc83d'; g.fillRect(-4, 34, 8, 26); }
-    else if (id === 'parkour') { g.fillStyle = '#fff'; g.fillRect(-60, 50, 120, 10); g.beginPath(); g.arc(0, -20, 14, 0, 7); g.fill(); g.fillRect(-4, -6, 8, 30); }
-    else { g.fillStyle = '#fff'; g.fillRect(-44, -34, 40, 40); g.fillRect(4, -34, 40, 40); g.fillRect(-44, 14, 40, 40); }
-    g.restore();
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-  }
-  function makeCart(id) {
-    const g = new THREE.Group(); const spare = !META[id];
-    const col = spare ? 0x555566 : 0x23203f;
-    const bodyMat = new THREE.MeshStandardMaterial({color: col, roughness: .55, metalness: .1});
-    const sh = new THREE.Shape(); const w = 1.1, ht = 1.35, r = .12, nt = .22;
-    sh.moveTo(-w + r, -ht); sh.lineTo(w - r, -ht); sh.quadraticCurveTo(w, -ht, w, -ht + r); sh.lineTo(w, ht - nt); sh.lineTo(w - .35, ht - nt); sh.lineTo(w - .35, ht); sh.lineTo(-w + .35, ht); sh.lineTo(-w + .35, ht - nt); sh.lineTo(-w, ht - nt); sh.lineTo(-w, -ht + r); sh.quadraticCurveTo(-w, -ht, -w + r, -ht);
-    const body = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {depth: .34, bevelEnabled: true, bevelThickness: .05, bevelSize: .05, bevelSegments: 3}), bodyMat); body.position.z = -.17; body.castShadow = true; g.add(body);
-    const lab = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.7), new THREE.MeshStandardMaterial({map: labelTex(id), roughness: .4, emissive: 0xffffff, emissiveMap: null, emissiveIntensity: 0})); lab.position.set(0, .12, .235); g.add(lab);
-    const frame = new THREE.Mesh(new THREE.PlaneGeometry(1.82, 1.82), new THREE.MeshStandardMaterial({color: 0x0f0d28, roughness: .6})); frame.position.set(0, .12, .228); g.add(frame);
-    for (let i = 0; i < 5; i++) { const rg = new THREE.Mesh(new THREE.BoxGeometry(1.6, .035, .05), bodyMat); rg.position.set(0, ht - .52 - i * .0 + 0, .22); rg.visible = false; g.add(rg); }
-    for (let i = 0; i < 7; i++) { const pin = new THREE.Mesh(new THREE.BoxGeometry(.1, .22, .04), new THREE.MeshStandardMaterial({color: 0xffc83d, metalness: .9, roughness: .25})); pin.position.set(-.72 + i * .24, -ht + .12, .0); g.add(pin); }
-    if (spare) { const s = new THREE.Mesh(new THREE.PlaneGeometry(1.5, .32), new THREE.MeshBasicMaterial({map: (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 54; const x = c.getContext('2d'); x.fillStyle = '#1d1840'; x.fillRect(0, 0, 256, 54); x.fillStyle = '#ffc83d'; x.font = `bold 30px ${FONT}`; x.textAlign = 'center'; x.fillText('備用・未開放', 128, 38); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })()})); s.position.set(0, -.78, .26); g.add(s); }
-    g.userData = {id, ty: {x: 0, y: 0, z: 0, rx: 0, ry: 0, s: 1}};
-    return g;
-  }
-  const carts = CART_IDS.map(id => { const c = makeCart(id); scene.add(c); c.position.set(0, 0, -30); c.scale.setScalar(.01); return c; });
-  const byId = Object.fromEntries(carts.map(c => [c.userData.id, c]));
-
-  // 主機
-  const consoleG = new THREE.Group(); scene.add(consoleG);
-  const cm = new THREE.MeshStandardMaterial({color: 0x2b2766, roughness: .45, metalness: .25});
-  const cb = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.1, 2.2), cm); cb.position.set(0, -2.45, 0); cb.castShadow = true; cb.receiveShadow = true; consoleG.add(cb);
-  const slot = new THREE.Mesh(new THREE.BoxGeometry(2.6, .1, .5), new THREE.MeshStandardMaterial({color: 0x050414})); slot.position.set(0, -1.88, .45); consoleG.add(slot);
-  const strip = new THREE.Mesh(new THREE.BoxGeometry(5.0, .06, .06), new THREE.MeshStandardMaterial({color: 0x38e1ff, emissive: 0x38e1ff, emissiveIntensity: 2})); strip.position.set(0, -2.1, 1.12); consoleG.add(strip);
-  const ledM = new THREE.MeshStandardMaterial({color: 0xff4fa3, emissive: 0xff4fa3, emissiveIntensity: 2});
-  [-2.1, -1.8].forEach(x => { const l = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 8), ledM); l.position.set(x, -2.3, 1.11); consoleG.add(l); });
-  consoleG.visible = false; consoleG.position.y = 1.3;
-
-  // 版面：每種模式幫每張卡帶設定目標
-  let mode = 'story', pickCb = null, insertId = null, hoverId = null;
-  const set = (c, o) => Object.assign(c.userData.ty, {x: 0, y: 0, z: 0, rx: 0, ry: 0, s: .01}, o);
-  function layout(m) {
-    mode = m;
-    consoleG.visible = m === 'go';
-    carts.forEach(c => set(c, {z: -30}));
-    if (m === 'story') set(byId.catch, {x: 0, y: .25, z: 1, s: .95, ry: .3});
-    if (m === 'what') set(byId.catch, {x: -4.2, y: .4, z: 0, s: .75, ry: .5});
-    if (m === 'types') CART_IDS.forEach((id, i) => set(byId[id], {x: (i - 2.5) * 1.75, y: .45, z: 0, s: .64}));
-    if (m === 'recipe') ['catch', 'slice', 'dodge', 'fight'].forEach((id, i) => set(byId[id], {x: (i - 1.5) * 1.9, y: .5, z: 0, s: .56}));
-    if (m === 'go') set(byId.catch, {x: 0, y: .05, z: 1, s: .72, ry: 0, rx: -.1});
-  }
-  view = {
-    mode(m, cb) { layout(m); pickCb = cb || null; },
-    insert(id, cb) { insertId = id; consoleG.visible = true; set(byId[id], {x: 0, y: 1.1, z: 2.0, s: .9, rx: -.3}); setTimeout(() => { byId[id].userData.ty = {x: 0, y: -.1, z: .35, rx: -.03, ry: 0, s: .85}; }, 500); setTimeout(cb, 1100); },
-    eject() { if (insertId) { layout(mode); insertId = null; } }
-  };
-
-  // 操作
-  const ray = new THREE.Raycaster(), pt = new THREE.Vector2();
-  const pick = e => { const r = canvas.getBoundingClientRect(); pt.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(pt, camera); const hit = ray.intersectObjects(carts, true)[0]; if (!hit) return null; let o = hit.object; while (o && !o.userData.id) o = o.parent; return o ? o.userData.id : null; };
-  canvas.addEventListener('pointermove', e => { hoverId = mode === 'types' ? pick(e) : null; canvas.style.cursor = hoverId ? 'pointer' : 'default'; });
-  canvas.addEventListener('click', e => { if (mode === 'types' && !insertId) { const id = pick(e); if (id && pickCb) pickCb(id); } });
-  function resize() { const w = innerWidth, hh = innerHeight; renderer.setSize(w, hh, false); camera.aspect = w / hh; camera.fov = w / hh < 1 ? 62 : 40; camera.position.z = w / hh < 1 ? 13 : 9; camera.updateProjectionMatrix(); }
-  addEventListener('resize', resize); resize();
-
-  const clock = new THREE.Clock();
-  (function loop() {
-    const t = clock.getElapsedTime();
-    carts.forEach((c, i) => {
-      const ty = c.userData.ty, id = c.userData.id, lift = (hoverId === id && !insertId) ? .35 : 0;
-      const floaty = (mode === 'story' || mode === 'what' || mode === 'recipe') ? Math.sin(t * 1.6 + i) * .12 : (mode === 'types' && !insertId ? Math.sin(t * 1.4 + i * .9) * .06 : 0);
-      const spin = (mode === 'story' && id === 'catch') ? Math.sin(t * .8) * .6 : (mode === 'what' && id === 'catch') ? t * .8 : (hoverId === id ? Math.sin(t * 3) * .12 : 0);
-      c.position.x += (ty.x - c.position.x) * .1; c.position.y += (ty.y + lift + floaty - c.position.y) * .1; c.position.z += (ty.z - c.position.z) * .1;
-      c.rotation.x += (ty.rx - c.rotation.x) * .1; c.rotation.y += ((ty.ry + spin) - c.rotation.y) * .12;
-      const s = c.scale.x + (ty.s - c.scale.x) * .1; c.scale.setScalar(s);
+/* ---------- 步驟 7：Bug 怪與麻煩事件 ---------- */
+async function stepBug(tk) {
+  const SC = [
+    ['客人臨時說：「我想要再加一個炸彈！」', ['整個遊戲刪掉重做', '在原本的遊戲加一個新角色和新規則', '假裝沒聽到'], 1, '加新需求不用重來，在原本的程式上多加一個角色和規則就好。'],
+    ['試玩員說：「籃子會飛出畫面外！」', ['把籃子刪掉', '找到控制 x 座標的積木，加上最左和最右的限制', '叫玩家不要往右邊走'], 1, '找出控制位置的積木，加上限制，這就是除錯。'],
+    ['試玩員說：「我接到蘋果，分數怎麼不會加？」', ['檢查「碰到籃子」那一段，有沒有「分數加 1」的積木', '把分數改成固定 100', '重新開機'], 0, '分數不動，先檢查「碰到」那一段有沒有改變分數的積木。'],
+    ['交期倒數：客人明天就來拿！', ['全部重做', '先做好最重要的玩法，其他功能之後再加', '放棄這張訂單'], 1, '時間不夠時，先做出可以玩的核心，再慢慢加功能。']
+  ];
+  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = () => { done(6); go(7); };
+  const body = h('div', {});
+  const render = () => {
+    body.replaceChildren();
+    if (!S.caught) { body.append(h('div', {class: 'lead'}, '🐛 桌上有一隻亂跑的 Bug 怪，點他把他抓起來！')); return; }
+    body.append(h('div', {class: 'lead'}, '抓到了！下面是接單路上會遇到的「麻煩事件卡」，選出最好的處理方式：'));
+    SC.forEach(([q, opts, a, why], qi) => {
+      const row = h('div', {class: 'item col' + (S.bugs[qi] ? ' right' : '')}, h('div', {class: 't'}, q));
+      const bs = h('div', {class: 'opts'});
+      opts.forEach((o, oi) => bs.append(h('button', {disabled: S.bugs[qi] ? '' : null, onclick: ev => {
+        if (S.bugs[qi]) return;
+        if (oi === a) { S.bugs[qi] = 1; save(); sfx('right'); row.classList.add('right'); bs.querySelectorAll('button').forEach(b => { b.disabled = true; }); row.append(h('div', {class: 'why2'}, '✓ ' + why)); if (Object.keys(S.bugs).length === SC.length) { nb.disabled = false; cheer(); toast('你已經是合格的 Bug 獵人！'); } }
+        else { ev.target.classList.add('wrong'); sfx('wrong'); setTimeout(() => ev.target.classList.remove('wrong'), 600); }
+      }}, o)));
+      row.append(bs); if (S.bugs[qi]) row.append(h('div', {class: 'why2'}, '✓ ' + why)); body.append(row);
     });
-    pl1.intensity = 65 + Math.sin(t * 3) * 14; pl2.intensity = 65 + Math.cos(t * 3.3) * 14;
-    renderer.render(scene, camera);
-    requestAnimationFrame(loop);
-  })();
-  window.__intro = {ready: true, S};
+  };
+  if (view) { stage('desk'); }
+  if (!S.caught) {
+    await talk([B('最後一件事！'), B('工作室有個頭痛人物，叫做 Bug 怪。'), B('程式只要有一點點錯，他就跑出來搗亂。'), B('快看，他來了！點一下桌上亂跑的那隻，把他抓起來！')], tk);
+    if (dead(tk)) return;
+    if (view) { view.bug(true); view.pickCb(async p => { if (p.kind === 'bug') { view.bugCaught(); view.pickCb(null); S.caught = true; save(); sfx('combo'); view.actors.boss && view.actors.boss.once('Cheer'); render(); await talk([B('抓到了！幹得好！'), B('不過 Bug 怪只是在提醒你哪裡寫錯了。'), B('接單的路上還會碰到各種麻煩事件，來練習怎麼處理吧！')], tk); } }); } else S.caught = true;
+  } else { view && view.bug(false); }
+  render();
+  if (Object.keys(S.bugs).length === SC.length) nb.disabled = false;
+  panel(h('h2', {}, '抓 Bug 怪！'), body, nav(() => go(5), nb));
 }
 
-renderSteps();
-try { await start3d(); } catch (err) { console.warn('3D 開不了，改純頁面', err); document.body.classList.add('flat'); view = null; }
-go(Math.min(S.step || 0, 4));
+/* ---------- 步驟 8：接單出發 ---------- */
+async function stepGo(tk) {
+  if (view) { stage('boss'); view.layout('go'); view.addActor('mei', -4.5, 1.0, {face: 0}).then(a => { a.goto(-2.0, 0.2, .3); }); }
+  await talk([B(`${nm()}，你已經知道遊戲是什麼、客人想要什麼、Bug 怪怎麼對付了。`), B('第一張訂單來了！'), {w: '水果攤老闆娘', t: '拜託你了！我的第一張訂單：接水果！'}, B('把卡帶插進舊街機，把它做出來吧！')], tk);
+  if (dead(tk)) return;
+  panel(h('h2', {}, `${nm()}，第一張訂單：接水果`), h('div', {class: 'lead'}, '準備好就插入卡帶，進到編輯器開始做。'),
+    nav(() => go(6), h('button', {class: 'btn', onclick: () => { done(7); withInsert('catch', () => setTimeout(() => { location.href = '/level1.html'; }, 400)); }}, '接下訂單，插入卡帶')));
+}
+
+/* ---------- 啟動 ---------- */
+$('#mute').onclick = () => { setMuted(!isMuted()); $('#mute').textContent = isMuted() ? '🔇' : '🔊'; };
+try {
+  const {createWorld} = await import('/intro3d.js');
+  view = await createWorld($('#gl'), {META, info, CART_IDS});
+  view.layout('portal');
+} catch (err) { console.warn('3D 開不了，改純頁面', err); document.body.classList.add('flat'); view = null; }
+window.__intro = {ready: true, S, go, get view() { return view; }};
+go(Math.min(S.step || 0, 7));
