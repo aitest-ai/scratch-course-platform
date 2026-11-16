@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>忍者道場｜第 1 關 接東西</title>
+<link rel="stylesheet" href="/level.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand">忍者道場<small>第 1 關・接東西</small></div>
+  <nav id="steps" aria-label="關卡進度"></nav>
+  <div class="who" id="who"></div>
+</header>
+
+<main id="view">
+  <!-- 引導步驟：全螢幕卡片 -->
+  <section class="panel" id="p-play"></section>
+  <section class="panel" id="p-elements"></section>
+  <section class="panel" id="p-workshop"></section>
+
+  <!-- 實作步驟：左邊任務、右邊真的 Scratch 編輯器 -->
+  <section class="panel split" id="p-code">
+    <aside id="mission">
+      <div id="missionBody"></div>
+    </aside>
+    <div id="editorWrap">
+      <div id="editorLoading">道場準備中…第一次會慢一點</div>
+      <div id="editor"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-quiz"></section>
+  <section class="panel" id="p-done"></section>
+</main>
+<div id="toast"></div>
+
+<noscript>這個網頁需要開啟 JavaScript。</noscript>
+<script src="/level.js"></script>
+</body>
+</html>
