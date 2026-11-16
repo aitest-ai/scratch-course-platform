@@ -88,7 +88,7 @@
         h('div', { style: 'margin-top:10px' }, start),
         h('div', { class: 'note', style: 'margin-top:14px' }, '邊玩邊想：畫面上有哪些「東西」和「規則」？今天你先做出基本版，過關之後可以挑「強化模組」，把生命、炸彈、越接越快裝到自己的遊戲上。'))),
       h('div', { class: 'row' }, h('span'), nb)));
-    drawDemo(cv.getContext('2d'), { bx: 240, fruits: [], t: 0 });
+    drawDemo(cv.getContext('2d'), { bx: 240, fruits: [], t: 0, life: 3, spd: 5 });
   }
   var demoImgs = null;
   function loadDemoImgs() {

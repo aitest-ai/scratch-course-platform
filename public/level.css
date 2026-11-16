@@ -79,3 +79,27 @@ ul.check li.bad i{background:var(--warn);border-color:var(--warn)}
 #mission.collapsed #missionBody{display:none}
 #mtoggle{display:block;width:100%;border:2px solid var(--ink);background:var(--gold);border-radius:10px;font-weight:700;font-size:14px;padding:6px 0;margin-bottom:10px;cursor:pointer}
 #mission.collapsed #mtoggle{padding:8px 0;writing-mode:vertical-rl;height:140px}
+
+/* ===== 街機夜晚主題（與街機城首頁一致）===== */
+:root{--ink:#1d1840;--paper:#141238;--red:#e8483a;--gold:#ffc83d;--line:#cfc9f0;--neon:#38e1ff;--pink:#ff4fa3}
+html,body{background:#141238;color:#1d1840}
+#top{background:linear-gradient(90deg,#0d0b2c,#241d6b);border-bottom:3px solid var(--gold);box-shadow:0 2px 18px #0008}
+.brand a{color:var(--gold)!important;text-shadow:0 0 12px #ffc83d88}
+.brand small{color:#cfd0ff}
+.dot{background:#ffffff18;color:#dcdcff;border:2px solid transparent}
+.dot.cur{background:var(--gold);color:#3a2800;border-color:#fff;box-shadow:0 0 14px #ffc83daa}
+.dot.cur b{background:#e8483a}
+.dot.done b{background:#2fbf7a}
+#view{background:radial-gradient(circle at 20% 10%,#2b2a7a 0,#141238 60%)}
+#view::before{content:"";position:absolute;inset:0;background-image:radial-gradient(#fff 1px,transparent 1.5px);background-size:70px 58px;opacity:.12;pointer-events:none}
+.panel{z-index:1}
+.card{background:#fffdf6;border:3px solid #5b4fd0;border-radius:18px;box-shadow:0 0 0 3px #1d1840,0 8px 28px #0009,0 0 30px #6a55ff44}
+.tag{background:var(--gold);border-color:#1d1840}
+.btn{background:linear-gradient(#ffd45c,#ffb830);border:2px solid #1d1840;box-shadow:0 3px 0 #1d1840}
+.btn.sec{background:#fff}
+#mission{background:#17134a!important;border-right:3px solid #5b4fd0!important}
+#mission .mcard{background:#fffdf6}
+#mtoggle{background:var(--gold)}
+.item{background:#f6f3ff}
+.wsbox{background:#f6f3ff}
+#demo{border-color:#5b4fd0;box-shadow:0 0 22px #6a55ff66}
