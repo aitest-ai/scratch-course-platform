@@ -25,8 +25,8 @@
     clearTimeout(toast.t); toast.t = setTimeout(function () { e.style.display = 'none'; }, 3200);
   }
 
-  var STEPS = ['玩玩看', '拆元素', '畫素材', '拼積木', '除錯', '小測驗', '完成'];
-  var PANELS = ['p-play', 'p-elements', 'p-workshop', 'p-code', 'p-code', 'p-quiz', 'p-done'];
+  var STEPS = ['玩玩看', '拆元素', '畫素材', '拼積木', '強化模組', '除錯', '小測驗', '完成'];
+  var PANELS = ['p-play', 'p-elements', 'p-workshop', 'p-code', 'p-code', 'p-code', 'p-quiz', 'p-done'];
   var KEY = 'ninja-l1-v1';
   var S = load() || { step: 0, done: [], hints: 0, art: { basket: 'basket', bc: '#c98a4b', item: 'apple', ic: '#e8483a' }, debugVariant: Math.floor(Math.random() * 3) };
   function load() { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } }
@@ -45,7 +45,7 @@
     document.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('on'); });
     $('#' + PANELS[i]).classList.add('on');
     renderSteps();
-    [buildPlay, buildElements, buildWorkshop, function () { enterCode(false); }, function () { enterCode(true); }, buildQuiz, buildDone][i]();
+    [buildPlay, buildElements, buildWorkshop, function () { enterCode('build'); }, function () { enterCode('power'); }, function () { enterCode('debug'); }, buildQuiz, buildDone][i]();
   }
   function done(i) { S.done[i] = true; save(); renderSteps(); }
   function next(i) { return h('button', { class: 'btn', onclick: function () { go(i); } }, '下一步'); }
@@ -76,17 +76,17 @@
     var p = $('#p-play'); p.innerHTML = '';
     var cv = h('canvas', { id: 'demo', width: 480, height: 360 });
     var score = h('div', { id: 'demoScore' }, '0');
-    var left = h('span', { id: 'demoLeft' }, '20');
+    var left = h('span', { id: 'demoLeft' }, '3');
     var nb = h('button', { class: 'btn', onclick: function () { stopDemo(); done(0); go(1); } }, '玩過了，下一步');
     nb.disabled = !S.done[0];
-    var start = h('button', { class: 'btn sec', onclick: function () { runDemo(cv, score, left, nb); } }, '▶ 開始玩（20 秒）');
+    var start = h('button', { class: 'btn sec', onclick: function () { runDemo(cv, score, left, nb); } }, '▶ 開始玩');
     p.append(h('div', { class: 'card' },
       h('span', { class: 'tag' }, '第 1 步・玩玩看'), h('h2', {}, '今天的任務：做一個「接東西」遊戲'),
-      h('div', { class: 'lead' }, '先玩玩看這個做好的小遊戲。用鍵盤的 ← → 左右鍵移動籃子，接住掉下來的蘋果。'),
+      h('div', { class: 'lead' }, '先玩玩看這個「接水果大師」。用 ← → 移動籃子，接蘋果得分；漏接蘋果、或碰到炸彈都會少一條命；越接越快。三條命用完就結束。'),
       h('div', { id: 'demoWrap' }, cv, h('div', { id: 'demoSide' },
-        h('div', {}, '分數'), score, h('div', {}, '剩下 ', left, ' 秒'),
+        h('div', {}, '分數'), score, h('div', {}, '剩下 ', left, ' 條命'),
         h('div', { style: 'margin-top:10px' }, start),
-        h('div', { class: 'note', style: 'margin-top:14px' }, '邊玩邊想：畫面上有哪些「東西」？遊戲有哪些「規則」？下一步我們要把它們一個一個拆出來。'))),
+        h('div', { class: 'note', style: 'margin-top:14px' }, '邊玩邊想：畫面上有哪些「東西」和「規則」？今天你先做出基本版，過關之後可以挑「強化模組」，把生命、炸彈、越接越快裝到自己的遊戲上。'))),
       h('div', { class: 'row' }, h('span'), nb)));
     drawDemo(cv.getContext('2d'), { bx: 240, fruits: [], t: 0 });
   }
@@ -94,36 +94,54 @@
   function loadDemoImgs() {
     if (demoImgs) return demoImgs;
     function im(svg) { var i = new Image(); i.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg); return i; }
-    demoImgs = { basket: im(basketSVG('basket', '#c98a4b')), apple: im(itemSVG('apple', '#e8483a')) };
+    demoImgs = { basket: im(basketSVG('basket', '#c98a4b')), apple: im(itemSVG('apple', '#e8483a')),
+      bomb: im('<svg xmlns="http://www.w3.org/2000/svg" width="52" height="60" viewBox="0 0 52 60"><circle cx="26" cy="36" r="20" fill="#2b2b33" stroke="#000" stroke-width="3"/><rect x="20" y="10" width="12" height="9" rx="2" fill="#555" stroke="#000" stroke-width="2"/><path d="M26 10 C26 4 32 4 36 2" fill="none" stroke="#a66b2c" stroke-width="3"/><circle cx="38" cy="3" r="4" fill="#ffb300"/></svg>') };
     return demoImgs;
   }
   function drawDemo(ctx, st) {
     var im = loadDemoImgs();
     ctx.fillStyle = '#d6ecff'; ctx.fillRect(0, 0, 480, 360);
     ctx.fillStyle = '#7cc27c'; ctx.fillRect(0, 330, 480, 30);
-    st.fruits.forEach(function (f) { ctx.drawImage(im.apple, f.x - 24, f.y - 27, 48, 54); });
+    st.fruits.forEach(function (f) { ctx.drawImage(f.bomb ? im.bomb : im.apple, f.x - 24, f.y - 27, 48, 54); });
     ctx.drawImage(im.basket, st.bx - 45, 290, 90, 60);
+    if (st.life != null) {
+      ctx.font = '22px sans-serif'; ctx.fillStyle = '#e8483a'; ctx.textAlign = 'left';
+      ctx.fillText('♥'.repeat(Math.max(0, st.life)), 10, 28);
+      ctx.fillStyle = '#333'; ctx.font = '14px sans-serif'; ctx.fillText('速度 ' + st.spd, 10, 50);
+    }
+    if (st.over) {
+      ctx.fillStyle = 'rgba(28,36,48,.88)'; ctx.fillRect(110, 140, 260, 80);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 36px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('遊戲結束', 240, 193);
+    }
   }
   function stopDemo() { clearInterval(demoTimer); window.onkeydown = window.onkeyup = null; }
   function runDemo(cv, scoreEl, leftEl, nb) {
     stopDemo();
-    var ctx = cv.getContext('2d'); var st = { bx: 240, fruits: [], t: 0 }; var keys = {}; var sc = 0;
+    var ctx = cv.getContext('2d'); var st = { bx: 240, fruits: [], t: 0, life: 3, spd: 5, over: false }; var keys = {}; var sc = 0;
     window.onkeydown = function (e) { keys[e.key] = true; if (e.key.indexOf('Arrow') === 0) e.preventDefault(); };
     window.onkeyup = function (e) { keys[e.key] = false; };
     var frames = 0;
+    scoreEl.textContent = '0'; leftEl.textContent = '3';
+    function lose() {
+      st.life--; leftEl.textContent = Math.max(0, st.life);
+      if (st.life <= 0) { st.over = true; drawDemo(ctx, st); stopDemo(); done(0); nb.disabled = false; toast('遊戲結束！你接到了 ' + sc + ' 顆。'); }
+    }
     demoTimer = setInterval(function () {
       frames++;
       if (keys.ArrowLeft) st.bx = Math.max(45, st.bx - 7);
       if (keys.ArrowRight) st.bx = Math.min(435, st.bx + 7);
-      if (frames % 36 === 0) st.fruits.push({ x: 30 + Math.random() * 420, y: -20 });
-      st.fruits.forEach(function (f) { f.y += 4; });
+      if (frames % 24 === 0) st.fruits.push({ x: 30 + Math.random() * 420, y: -20 });
+      if (frames % 75 === 0) st.fruits.push({ x: 30 + Math.random() * 420, y: -20, bomb: true });
+      st.fruits.forEach(function (f) { f.y += st.spd * 0.8; });
       st.fruits = st.fruits.filter(function (f) {
-        if (f.y > 285 && f.y < 330 && Math.abs(f.x - st.bx) < 52) { sc++; scoreEl.textContent = sc; return false; }
-        return f.y < 345;
+        if (f.y > 285 && f.y < 330 && Math.abs(f.x - st.bx) < 52) {
+          if (f.bomb) { lose(); } else { sc++; scoreEl.textContent = sc; if (sc % 5 === 0) st.spd++; }
+          return false;
+        }
+        if (f.y >= 345) { if (!f.bomb) lose(); return false; }
+        return true;
       });
       drawDemo(ctx, st);
-      var left = Math.max(0, 20 - Math.floor(frames / 30)); leftEl.textContent = left;
-      if (left <= 0) { stopDemo(); done(0); nb.disabled = false; toast('時間到！你接到了 ' + sc + ' 顆。'); }
     }, 33);
   }
 
@@ -288,7 +306,13 @@
       Object.keys(t.variables || {}).forEach(function (id) { vars.push({ name: t.variables[id][0], global: !!t.isStage, owner: t.name }); });
     });
     var has = function (o) { return (ops[o] || 0) > 0; };
+    var cnt = function (o) { return ops[o] || 0; };
+    var hasVar = function (n) { return vars.some(function (v) { return v.name.indexOf(n) >= 0; }); };
+    var nSprites = proj.targets.filter(function (t) { return !t.isStage; }).length;
     return {
+      modLife: hasVar('生命') && cnt('data_changevariableby') >= 2 && has('control_stop'),
+      modBomb: nSprites >= 3 && cnt('control_create_clone_of') >= 2 && cnt('control_start_as_clone') >= 2,
+      modSpeed: hasVar('速度') && (has('operator_subtract') || has('operator_multiply')),
       keysMove: has('sensing_keypressed') && (has('motion_changexby') || has('motion_setx')),
       keysWrongAxis: has('sensing_keypressed') && !(has('motion_changexby') || has('motion_setx')) && has('motion_changeyby'),
       spawn: has('control_create_clone_of') && has('control_forever'),
@@ -311,6 +335,15 @@
     { k: 'del', t: '用完的分身會被刪除', hint: '碰到籃子加完分之後、以及掉到地上的時候，都要接「刪除這個分身」。不刪的話，場上分身會越來越多。' }
   ];
 
+  var POWERS = [
+    { k: 'modLife', icon: '❤️', t: '生命模組', d: '漏接蘋果就少一條命，三條命用完，遊戲結束。',
+      hint: '①變數→建立「生命」（適用於所有角色）。②綠旗時「將 生命 設為 3」。③蘋果掉到地上（沒接到）時「將 生命 改變 -1」。④加一個「如果 生命 < 1 那麼」→「停止 全部」。' },
+    { k: 'modBomb', icon: '💣', t: '炸彈模組', d: '多一個炸彈角色，接到炸彈就扣命。',
+      hint: '①畫一個新角色「炸彈」。②照蘋果的做法：綠旗→隱藏→重複無限次建立分身（等 2.5 秒）。③「當分身產生時」往下掉，碰到籃子就「將 生命 改變 -1」再刪除。（需要先裝好生命模組）' },
+    { k: 'modSpeed', icon: '⚡', t: '加速模組', d: '越接越快，每接 5 顆，下落速度加 1。',
+      hint: '①建立變數「速度」（適用於所有角色），綠旗時設為 5。②把掉落的「y 改變 -6」換成「y 改變（0 - 速度）」。③接到蘋果加分後：如果「分數 除以 5 的餘數 = 0」，就「將 速度 改變 1」。' }
+  ];
+
   var DEBUG = [
     { k: 'a', sym: '玩一陣子之後，場上的水果越來越多，電腦會變慢。', hint: ['先按綠旗玩一下，看看左邊「場上分身數量」的數字。', '分身用完之後會去哪裡？看看控制裡有沒有一塊會讓分身消失。', '在水果的「當分身產生時」那一串，最後面接上「刪除這個分身」；接到籃子加分之後也要刪。'], fixed: function (a) { return a.del; }, why: '分身用完沒有刪除，會一直留在場上。' },
     { k: 'b', sym: '籃子明明接到了水果，左上角的分數卻一直是 0。', hint: ['先按綠旗，用 ← → 移動籃子去接水果，看看分數。', '到「變數」那一頁，看看「分數」前面的小框，是在舞台還是在水果角色上？', '把這個變數刪掉，重新建立，選「適用於所有角色」，再把積木裡的變數換成新的。'], fixed: function (a) { return a.varGlobal; }, why: '分數是「只適用於這個角色」的變數，每個分身各算各的。' },
@@ -318,7 +351,7 @@
   ];
 
   /* ---------- 3、4 實作：任務條與檢查 ---------- */
-  var hintIdx = 0, curDebug = false;
+  var hintIdx = 0, curDebug = false, curMode = 'build';
   function fitEditor() {
     window.dispatchEvent(new Event('resize'));
   }
@@ -331,19 +364,22 @@
   document.getElementById('mtoggle').onclick = function () {
     setMission(!document.getElementById('mission').classList.contains('collapsed'));
   };
-  function enterCode(isDebug) {
+  var MODE_TAG = { build: '第 4 步・拼積木', power: '第 5 步・強化模組', debug: '第 6 步・除錯' };
+  function enterCode(mode) {
     if (window.innerWidth < 1300) setMission(true);
     stopDemo();
-    curDebug = isDebug; hintIdx = 0;
+    var isDebug = mode === 'debug';
+    curMode = mode; curDebug = isDebug; hintIdx = 0;
     var body = $('#missionBody'); body.innerHTML = '';
-    body.append(h('div', { class: 'mcard' }, h('div', { class: 'tag' }, isDebug ? '第 5 步・除錯' : '第 4 步・拼積木'), h('div', { class: 'lead', style: 'font-size:15px;margin:0' }, '準備編輯器中…')));
+    body.append(h('div', { class: 'mcard' }, h('div', { class: 'tag' }, MODE_TAG[mode]), h('div', { class: 'lead', style: 'font-size:15px;margin:0' }, '準備編輯器中…')));
     var loading = $('#editorLoading'); loading.style.display = 'flex';
     ensureEditor().then(function () {
       var url = isDebug ? '/projects/l1_debug_' + DEBUG[S.debugVariant].k + '.sb3' : '/projects/l1_start.sb3';
       var key = isDebug ? 'debug' : 'build';
       var reuse = ed.loadedFor === key;
-      var p = reuse ? Promise.resolve() : loadProjectFile(url).then(function () { return isDebug ? null : applyArt(); }).then(function () { ed.loadedFor = key; });
-      return p;
+      if (reuse) return;
+      var stash = (isDebug && ed.loadedFor === 'build') ? ed.vm.saveProjectSb3().then(function (blob) { ed.myBlob = blob; }) : Promise.resolve();
+      return stash.then(function () { return loadProjectFile(url); }).then(function () { return isDebug ? null : applyArt(); }).then(function () { ed.loadedFor = key; });
     }).then(function () {
       loading.style.display = 'none';
       window.dispatchEvent(new Event('resize'));
@@ -354,19 +390,30 @@
   function renderMission() {
     var body = $('#missionBody'); body.innerHTML = '';
     var dbg = DEBUG[S.debugVariant];
-    body.append(h('div', { class: 'mcard' }, h('span', { class: 'tag' }, curDebug ? '第 5 步・除錯' : '第 4 步・拼積木'),
-      curDebug
-        ? h('div', {}, h('h3', {}, '這個遊戲壞掉了'), h('p', {}, '症狀：', h('b', {}, dbg.sym)), h('p', {}, '先按綠旗玩玩看，找出哪裡不對，把它修好。修好再按「檢查」。'))
-        : h('div', {}, h('h3', {}, '把「接東西」做出來'), h('p', {}, '右邊已經有你剛畫好的籃子和水果。請用積木讓它們動起來。做好一項，下面就會自動打勾。'))));
+    var head;
+    if (curMode === 'debug') head = h('div', {}, h('h3', {}, '這個遊戲壞掉了'), h('p', {}, '症狀：', h('b', {}, dbg.sym)), h('p', {}, '先按綠旗玩玩看，找出哪裡不對，把它修好。修好再按「檢查」。'));
+    else if (curMode === 'power') head = h('div', {}, h('h3', {}, '🎁 解鎖強化模組！'), h('p', {}, '基本版過關了。現在挑 ', h('b', {}, '至少 2 個'), ' 模組，裝到你自己的遊戲上，就會變成「接水果大師」。裝好會自動打勾。'));
+    else head = h('div', {}, h('h3', {}, '把「接東西」做出來'), h('p', {}, '右邊已經有你剛畫好的籃子和水果。請用積木讓它們動起來。做好一項，下面就會自動打勾。'));
+    body.append(h('div', { class: 'mcard' }, h('span', { class: 'tag' }, MODE_TAG[curMode]), head));
     body.append(h('div', { class: 'mcard' }, h('h3', {}, '場上分身數量'), h('div', { class: 'hud' }, h('b', { id: 'cc' }, '0'), h('span', { id: 'cn' }, '按綠旗開始'))));
-    var list = h('ul', { class: 'check', id: 'checklist' });
-    CHECKS.forEach(function (c) { list.append(h('li', { 'data-k': c.k }, h('i', {}, ''), c.t)); });
-    body.append(h('div', { class: 'mcard' }, h('h3', {}, curDebug ? '修好之後應該是這樣' : '完成清單'), list));
+    if (curMode === 'power') {
+      var pl = h('ul', { class: 'check', id: 'plist' });
+      POWERS.forEach(function (c) {
+        pl.append(h('li', { 'data-k': c.k }, h('i', {}, ''), h('div', {}, h('b', {}, c.icon + ' ' + c.t), h('div', { style: 'font-size:14px;color:#555' }, c.d),
+          h('details', { style: 'margin-top:4px;font-size:14px' }, h('summary', { style: 'cursor:pointer;color:#a33' }, '怎麼做？'), h('div', { style: 'line-height:1.6;margin-top:4px' }, c.hint)))));
+      });
+      body.append(h('div', { class: 'mcard' }, h('h3', {}, '模組清單（裝 2 個以上）'), pl));
+    } else {
+      var list = h('ul', { class: 'check', id: 'checklist' });
+      CHECKS.forEach(function (c) { list.append(h('li', { 'data-k': c.k }, h('i', {}, ''), c.t)); });
+      body.append(h('div', { class: 'mcard' }, h('h3', {}, curDebug ? '修好之後應該是這樣' : '完成清單'), list));
+    }
+    var backTo = curMode === 'build' ? 2 : (curMode === 'power' ? 3 : 4);
     body.append(h('div', { class: 'mcard' },
       h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
-        h('button', { class: 'btn sec', onclick: showHint }, '💡 提示'),
+        curMode === 'power' ? null : h('button', { class: 'btn sec', onclick: showHint }, '💡 提示'),
         h('button', { class: 'btn', onclick: doCheck }, '✔ 檢查'),
-        h('button', { class: 'btn sec', onclick: function () { go(curDebug ? 3 : 2); } }, curDebug ? '上一步' : '回素材')),
+        h('button', { class: 'btn sec', onclick: function () { go(backTo); } }, curMode === 'build' ? '回素材' : '上一步')),
       h('div', { class: 'fb', id: 'diag' })));
     liveUpdate();
   }
@@ -376,6 +423,11 @@
     if (cc) { cc.textContent = n; cc.className = n > 60 ? 'bad' : ''; }
     if (cn) cn.textContent = n > 60 ? '個。太多了！電腦會變慢，Scratch 最多只能有 300 個。' : (n === 0 ? '個（按綠旗開始）' : '個');
     var a = analyze();
+    document.querySelectorAll('#plist li').forEach(function (li) {
+      var ok = !!a[li.getAttribute('data-k')];
+      li.className = ok ? 'ok' : '';
+      li.firstChild.textContent = ok ? '✓' : '';
+    });
     document.querySelectorAll('#checklist li').forEach(function (li) {
       var c = CHECKS.filter(function (x) { return x.k === li.getAttribute('data-k'); })[0];
       var ok = !!a[c.k];
@@ -419,7 +471,11 @@
     var a = analyze();
     liveTest().then(function (r) {
       var problems = [];
-      CHECKS.forEach(function (c) {
+      if (curMode === 'power') {
+        var got = POWERS.filter(function (p) { return a[p.k]; });
+        if (got.length < 2) problems.push('目前裝好 ' + got.length + ' 個模組，至少要 2 個。打開模組旁邊的「怎麼做？」看步驟。');
+        if (a.modBomb && !a.modLife) problems.push('炸彈要扣命，所以要先裝好「生命模組」。');
+      } else CHECKS.forEach(function (c) {
         if (!a[c.k]) problems.push((c.bad && c.bad(a)) || ('還沒完成：' + c.t + '。'));
       });
       if (!problems.length) {
@@ -435,8 +491,8 @@
         problems.slice(0, 3).forEach(function (t) { d.append(h('div', {}, '• ' + t)); });
       } else {
         d.className = 'fb show good'; d.innerHTML = '';
-        d.append(h('div', {}, '✓ 通過！試跑 4 秒：籃子會跟著按鍵移動，場上最多 ' + r.maxClones + ' 個分身。'));
-        var idx = curDebug ? 4 : 3; done(idx);
+        d.append(h('div', {}, curMode === 'power' ? '✓ 強化完成！你的遊戲升級了。按綠旗玩玩看！' : '✓ 通過！試跑 4 秒：籃子會跟著按鍵移動，場上最多 ' + r.maxClones + ' 個分身。'));
+        var idx = { build: 3, power: 4, debug: 5 }[curMode]; done(idx);
         d.append(h('div', { class: 'row' }, h('span'), h('button', { class: 'btn', onclick: function () { go(idx + 1); } }, '下一步')));
       }
     });
@@ -452,9 +508,9 @@
       { q: '籃子要左右移動，應該用哪一塊積木？', o: ['y 改變', 'x 改變', '面朝 90 度'], a: 1, e: '左右是 x 方向，上下才是 y 方向。' }
     ];
     var ok = 0;
-    var nb = h('button', { class: 'btn', onclick: function () { done(5); go(6); } }, '完成第 1 關');
+    var nb = h('button', { class: 'btn', onclick: function () { done(6); go(7); } }, '完成第 1 關');
     nb.disabled = true;
-    var card = h('div', { class: 'card' }, h('span', { class: 'tag' }, '第 6 步・小測驗'), h('h2', {}, '最後三題'));
+    var card = h('div', { class: 'card' }, h('span', { class: 'tag' }, '第 7 步・小測驗'), h('h2', {}, '最後三題'));
     Q.forEach(function (q, qi) {
       var ord = q.o.map(function (_, i) { return i; }).sort(function () { return Math.random() - 0.5; });
       var opts = ord.map(function (i) { return q.o[i]; }); var ans = ord.indexOf(q.a);
@@ -480,17 +536,17 @@
     var p = $('#p-done'); p.innerHTML = '';
     var dl = h('button', { class: 'btn', onclick: function () {
       if (!ed.vm) return toast('編輯器還沒準備好');
-      ed.vm.saveProjectSb3().then(function (blob) {
+      (ed.myBlob ? Promise.resolve(ed.myBlob) : ed.vm.saveProjectSb3()).then(function (blob) {
         var a = h('a', { href: URL.createObjectURL(blob), download: '接東西遊戲.sb3' }); document.body.append(a); a.click(); a.remove();
       });
     } }, '下載我的作品（.sb3）');
     p.append(h('div', { class: 'card', style: 'text-align:center' },
       h('div', { style: 'font-size:60px' }, '🥷'), h('h2', {}, '第 1 關通過！'),
-      h('div', { class: 'lead' }, '你完成了：玩玩看、拆元素、畫素材、拼積木、除錯、小測驗。', h('br'), '使用提示 ' + S.hints + ' 次。'),
+      h('div', { class: 'lead' }, '你完成了：玩玩看、拆元素、畫素材、拼積木、強化模組、除錯、小測驗。', h('br'), '使用提示 ' + S.hints + ' 次。'),
       h('div', { class: 'note', style: 'text-align:left' }, '這是第 1 關的雛形。下一步會接上登入與老師後台，作品也會自動存起來。現在先用「下載」把作品留下來。'),
-      h('div', { class: 'row', style: 'justify-content:center' }, dl, h('button', { class: 'btn sec', onclick: function () { S = { step: 0, done: [], hints: 0, art: S.art, debugVariant: Math.floor(Math.random() * 3) }; ed.loadedFor = null; save(); go(0); } }, '重玩一次'))));
+      h('div', { class: 'row', style: 'justify-content:center' }, dl, h('button', { class: 'btn sec', onclick: function () { S = { step: 0, done: [], hints: 0, art: S.art, debugVariant: Math.floor(Math.random() * 3) }; ed.loadedFor = null; ed.myBlob = null; save(); go(0); } }, '重玩一次'))));
   }
 
   window.__lv = { S: S, go: go, ed: ed, analyze: analyze, liveTest: liveTest };
-  go(Math.min(S.step || 0, 6));
+  go(Math.min(S.step || 0, 7));
 })();
