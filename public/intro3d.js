@@ -7,7 +7,7 @@ const FONT = '"Noto Sans TC","Microsoft JhengHei",sans-serif';
 export const CHARS = {
   boss: {file: 'wang', name: '老闆'},
   mei: {file: 'kk_rogue', name: '水果攤老闆娘', stall: true, strip: ['Knife_Offhand', '1H_Crossbow', '2H_Crossbow', 'Knife', 'Throwable']},
-  ting: {file: 'kk_barbarian', name: '道場主人', strip: ['1H_Axe_Offhand', 'Barbarian_Round_Shield', '1H_Axe', '2H_Axe', 'Mug']},
+  ting: {file: 'kk_barbarian', name: '獵人', strip: ['1H_Axe_Offhand', 'Barbarian_Round_Shield', '1H_Axe', '2H_Axe', 'Mug']},
   lin: {file: 'lin', name: '太空站站長', astronaut: true},
   yu: {file: 'kk_knight', name: '冒險隊長', strip: ['1H_Sword_Offhand', 'Badge_Shield', 'Rectangle_Shield', 'Round_Shield', 'Spike_Shield', '1H_Sword', '2H_Sword']}
 };
@@ -179,6 +179,28 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
       const led = new THREE.Mesh(new THREE.BoxGeometry(sz.x * .18, sz.y * .08, sz.z * .1), new THREE.MeshBasicMaterial({color: 0x38e1ff})); attach(cb, led, c.clone().add(new THREE.Vector3(sz.x * .12, sz.y * .08, sz.z * .53)));
     }
   }
+
+  // 水果攤老闆娘平常站隊時：不帶攤子，改用水果帽、腰間水果籃表示身分
+  function makeFruitGear(root) {
+    root.updateMatrixWorld(true);
+    const attach = (bone, mesh, wp) => { const ws = new THREE.Vector3(); bone.getWorldScale(ws); const bq = new THREE.Quaternion(); bone.getWorldQuaternion(bq); mesh.scale.multiply(new THREE.Vector3(1 / ws.x, 1 / ws.y, 1 / ws.z)); mesh.quaternion.copy(bq.invert()); bone.add(mesh); mesh.position.copy(bone.worldToLocal(wp.clone())); };
+    const fr = (c, r) => new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), new THREE.MeshStandardMaterial({color: c, roughness: .4}));
+    const head = root.getObjectByName('Rogue_Head'), body = root.getObjectByName('Rogue_Body'), hb = root.getObjectByName('head'), cb = root.getObjectByName('chest');
+    if (head && hb) {
+      const bb = new THREE.Box3().setFromObject(head), c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3()), r = sz.x * .1;
+      const hat = new THREE.Group();
+      const band = new THREE.Mesh(new THREE.TorusGeometry(sz.x * .43, r * .55, 8, 24), new THREE.MeshStandardMaterial({color: 0x4caa3a, roughness: .7})); band.rotation.x = Math.PI / 2; hat.add(band);
+      [[0xe8483a, -.32, .06], [0xffa53a, 0, -.02], [0xffd23a, .32, .06], [0xb55ad8, .16, .22], [0x7ad84a, -.16, .22]].forEach(([col, dx, dz]) => { const f = fr(col, r); f.position.set(dx * sz.x, r * .35, dz * sz.z + (dz > .15 ? 0 : sz.z * .02)); hat.add(f); });
+      const leaf = new THREE.Mesh(new THREE.ConeGeometry(r * .5, r * 1.6, 5), new THREE.MeshStandardMaterial({color: 0x2f8a2f})); leaf.position.set(0, r * 1.2, 0); hat.add(leaf);
+      attach(hb, hat, c.clone().add(new THREE.Vector3(0, sz.y * .38, 0)));
+    }
+    if (body && cb) {
+      const bb = new THREE.Box3().setFromObject(body), c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3());
+      const bk = new THREE.Group(); const basket = new THREE.Mesh(new THREE.CylinderGeometry(sz.x * .22, sz.x * .17, sz.y * .26, 14), new THREE.MeshStandardMaterial({color: 0xb9722f, roughness: .8})); bk.add(basket);
+      [[0xe8483a, -.07, 0], [0xffa53a, .08, .04], [0x7ad84a, 0, -.07]].forEach(([col, dx, dz]) => { const f = fr(col, sz.x * .1); f.position.set(dx * sz.x, sz.y * .17, dz * sz.x); bk.add(f); });
+      attach(cb, bk, c.clone().add(new THREE.Vector3(sz.x * .62, -sz.y * .28, 0)));
+    }
+  }
   // 水果攤：站在攤位後面（前方是擺滿水果的木桌＋遮陽布）
   function makeStall(g) {
     const st = new THREE.Group(); st.position.set(0, 0, .75);
@@ -189,7 +211,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     cols.forEach((c, i) => { const f = new THREE.Mesh(new THREE.SphereGeometry(.1, 12, 10), new THREE.MeshStandardMaterial({color: c, roughness: .4})); f.position.set(-.6 + i * .17, .78 + (i % 2) * .05, (i % 3 - 1) * .1); st.add(f); });
     [-.7, .7].forEach(x => { const p = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 1.9, 8), wd); p.position.set(x, .95, -.2); st.add(p); });
     const aw = new THREE.Mesh(new THREE.BoxGeometry(1.7, .05, .9), new THREE.MeshStandardMaterial({map: ctex(128, 32, (gg, w, h) => { for (let i = 0; i < 8; i++) { gg.fillStyle = i % 2 ? '#fff' : '#e8483a'; gg.fillRect(i * 16, 0, 16, h); } })})); aw.position.set(0, 1.88, -.05); aw.rotation.x = .18; st.add(aw);
-    g.add(st);
+    st.visible = false; g.add(st); return st;
   }
   const actors = {};
   async function addActor(key, x, z, opts = {}) {
@@ -200,11 +222,11 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     const CH = CHARS[key] || {};
     (CH.strip || []).forEach(n => { const o = root.getObjectByName(n); if (o && o.parent) o.parent.remove(o); });
     if (CH.astronaut) makeAstronaut(root);
-    if (CH.stall) makeStall(g);
+    let stallObj = null; if (CH.stall) { stallObj = makeStall(g); makeFruitGear(root); }
     root.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(root, true); const s = (CH.h || 2.0) / (b.max.y - b.min.y); a_h = (b.max.y - b.min.y) * s; root.scale.setScalar(s); root.position.y = -b.min.y * s;
     const sd = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), new THREE.MeshBasicMaterial({map: shadowTex, transparent: true, depthWrite: false})); sd.rotation.x = -Math.PI / 2; sd.position.y = .02; g.add(sd);
     const mixer = new THREE.AnimationMixer(root);
-    const a = {key, h: a_h, g, mixer, cur: null, tx: x, tz: z, face: opts.face ?? 0, speed: 2.0, onArrive: null, hop: 0};
+    const a = {key, h: a_h, stall: stallObj, g, mixer, cur: null, tx: x, tz: z, face: opts.face ?? 0, speed: 2.0, onArrive: null, hop: 0};
     a.play = (n, fade = .22, once = false) => { if (a.cur === n || !clips[n]) return; const act = mixer.clipAction(clips[n]); act.reset(); act.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat); act.clampWhenFinished = once; act.fadeIn(fade).play(); if (a.act) a.act.fadeOut(fade); a.act = act; a.cur = n; };
     a.once = (n, back = 'Idle') => { if (!clips[n]) return; a.cur = null; a.play(n, .15, true); clearTimeout(a.bt); a.bt = setTimeout(() => { a.cur = null; a.play(back, .3); }, Math.max(300, clips[n].duration * 1000 - 120)); };
     a.goto = (nx, nz, face, cb) => { a.tx = nx; a.tz = nz; if (face != null) a.face = face; a.onArrive = cb || null; };
@@ -280,9 +302,9 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     shot(n) { shot = n; },
     props(v) { props.visible = v; },
     // 聚焦某位客人：鏡頭拉近，其他人先隱藏；card 在右邊，所以把人物放在畫面左側
-    focus(key) { const a = actors[key]; if (!a) return; Object.entries(actors).forEach(([k, o]) => { o.g.visible = (k === key); });
-      SHOTS.focus.p = [a.g.position.x - 1.1, 1.4, a.g.position.z - 2.9]; SHOTS.focus.l = [a.g.position.x - 1.1, 1.1, a.g.position.z]; shot = 'focus'; },
-    unfocus() { Object.values(actors).forEach(o => { o.g.visible = true; }); shot = 'customers'; },
+    focus(key) { const a = actors[key]; if (!a) return; Object.entries(actors).forEach(([k, o]) => { o.g.visible = (k === key); if (o.stall) o.stall.visible = (k === key); });
+      SHOTS.focus.p = [a.g.position.x - 1.35, 1.4, a.g.position.z - 2.9]; SHOTS.focus.l = [a.g.position.x - 1.35, 1.1, a.g.position.z]; shot = 'focus'; },
+    unfocus() { Object.values(actors).forEach(o => { o.g.visible = true; if (o.stall) o.stall.visible = false; }); shot = 'customers'; },
     enterRoom() { roomVisible(true); stars.visible = false; },
     layout, pickCb(cb) { pickCb = cb || null; },
     say(key, text) { bubKey = text ? key : null; bub.hidden = !text; if (text) bub.textContent = text; },

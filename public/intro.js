@@ -23,7 +23,7 @@ const info = id => META[id] || SPARE[id];
 // 四位客人 = 四款遊戲（每句話一個對話框）
 const CUSTOMERS = {
   mei: {game: 'catch', job: '水果攤老闆娘', x: -2.1, z: 1.8, intro: '在街角賣了三十年水果，嗓門大、手腳快，最怕水果賣不完。', say: '「就是……水果會從天上掉下來，然後……要很好玩！」', want: ['水果一個一個從上面掉下來', '玩的人用籃子左右移動去接', '接到水果就加分，接到炸彈會扣命']},
-  ting: {game: 'slice', job: '道場主人', x: -0.7, z: 1.8, intro: '道場裡最嚴格的師父，每天盯著徒弟練手速，最愛說「再快一點」。', say: '「要有那種……咻！一刀砍下去，很爽的感覺！」', want: ['水果被丟到空中', '用滑鼠劃過去就把水果切開', '切到炸彈會扣命']},
+  ting: {game: 'slice', job: '獵人', x: -.7, z: 1.8, intro: '在山裡打獵多年，最近發現自己的刀工有點生疏，怕退步。', say: '「我想要一個會自動丟水果的遊戲，練我的速度和判斷力！」', want: ['水果自動被丟到空中（練速度）', '用滑鼠劃過去就把水果切開', '要分得出水果和炸彈，切到炸彈會扣命（練判斷力）']},
   lin: {game: 'dodge', job: '太空站站長', x: 0.7, z: 1.8, intro: '在太空站待了十年，什麼風浪都見過，只怕新人被隕石撞到。', say: '「石頭一直打過來，我的人要想辦法躲開，躲越久越厲害。」', want: ['隕石從上面不停掉下來', '玩的人移動太空船去躲', '撐越久，分數越高']},
   yu: {game: 'fight', job: '冒險隊長', x: 2.1, z: 1.8, intro: '帶著隊伍到處打怪的老手，說話很大聲，從來不怕怪物。', say: '「我要發射子彈！把怪物通通打趴！」', want: ['英雄在下面左右移動', '按空白鍵發射子彈打怪物', '怪物越來越多，血量用完就輸']}
 };
@@ -237,9 +237,9 @@ async function stepCustomers(tk) {
     const back = h('button', {class: 'btn sec', onclick: () => { sfx('whoosh'); view && view.unfocus(); busy = false; $('#brief').hidden = true; $('#card').style.display = ''; }}, '← 看看其他客人');
     const play = h('button', {class: 'btn', onclick: () => { $('#brief').hidden = true; $('#card').style.display = ''; busy = false; view && view.unfocus(); openGame(c.game); }}, `▶ 試玩「${m.title}」樣品卡帶`);
     const B2 = $('#brief'); B2.hidden = false; $('#card').style.display = 'none';
-    B2.replaceChildren(h('div', {class: 'bsk'}, h('div', {class: 'bcap'}, '客人畫的草圖（他說：就是這種感覺）'), h('div', {class: 'bimg', html: SKETCH[c.game]})),
+    B2.replaceChildren(h('div', {class: 'bsk'}, h('div', {class: 'bcap'}, '客人畫的草圖（他說：就是這種感覺）'), h('div', {class: 'bimg', html: SKETCH[c.game]}), h('p', {class: 'bsay'}, c.say)),
       h('div', {class: 'btxt'}, h('div', {class: 'bname', style: `border-color:${m.color}`}, h('b', {}, c.job), h('span', {}, '委託人')),
-        h('p', {class: 'bintro'}, c.intro), h('p', {class: 'bsay'}, c.say), h('div', {class: 'bwant'}, h('b', {}, '想要的效果'), h('ul', {}, c.want.map(w => h('li', {}, w)))),
+        h('p', {class: 'bintro'}, c.intro), h('div', {class: 'bwant'}, h('b', {}, '想要的效果'), h('ul', {}, c.want.map(w => h('li', {}, w)))),
         h('div', {class: 'row'}, back, play)));
   };
   view && view.pickCb(p => { if (p.kind === 'npc' && !busy) brief(p.id); });
