@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>遊戲街機城｜開幕導覽</title>
+<link rel="stylesheet" href="/intro.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<header id="top"><div class="brand"><a href="/">遊戲街機城</a><small>開幕導覽</small></div><div id="steps"></div><div class="who"></div></header>
+<main id="card"></main>
+<div id="modal" hidden>
+  <div class="screen">
+    <div class="bar"><b id="gtitle"></b><button id="gclose" class="btn sec">關閉</button></div>
+    <canvas id="game" width="480" height="360"></canvas>
+    <div id="gtip"></div>
+    <div id="gstart"><button class="btn" id="gplay">▶ 開始玩</button></div>
+  </div>
+</div>
+<div id="toast" role="status" hidden></div>
+<script type="module" src="/intro.js"></script>
+</body>
+</html>
