@@ -21,6 +21,15 @@ git -C "$WORK" checkout -q FETCH_HEAD
 
 cd "$WORK"
 npm ci --no-audit --no-fund
+export NODE_ENV=production
+
+# 編輯器依賴的套件要先建置（順序依上游 workspaces 排列；略過文件產生以節省時間）
+for ws in task-herder scratch-storage scratch-svg-renderer scratch-paint; do
+  npm run build --workspace="packages/$ws"
+done
+(cd packages/scratch-render && npx webpack)
+(cd packages/scratch-vm && npx webpack)
+
 cd packages/scratch-gui
 NODE_OPTIONS=--max-old-space-size=6144 npm run build:dist-standalone
 
