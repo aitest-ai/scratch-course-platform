@@ -319,7 +319,20 @@
 
   /* ---------- 3、4 實作：任務條與檢查 ---------- */
   var hintIdx = 0, curDebug = false;
+  function fitEditor() {
+    window.dispatchEvent(new Event('resize'));
+  }
+  function setMission(collapsed) {
+    var m = document.getElementById('mission');
+    m.classList.toggle('collapsed', collapsed);
+    document.getElementById('mtoggle').textContent = collapsed ? '▶ 任務' : '◀ 收起任務';
+    setTimeout(fitEditor, 50);
+  }
+  document.getElementById('mtoggle').onclick = function () {
+    setMission(!document.getElementById('mission').classList.contains('collapsed'));
+  };
   function enterCode(isDebug) {
+    if (window.innerWidth < 1300) setMission(true);
     stopDemo();
     curDebug = isDebug; hintIdx = 0;
     var body = $('#missionBody'); body.innerHTML = '';

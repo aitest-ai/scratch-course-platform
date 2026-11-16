@@ -55,7 +55,7 @@ button{font:inherit;cursor:pointer}
 .colors button{width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px var(--ink)}
 .colors button.on{box-shadow:0 0 0 4px var(--red)}
 /* 實作：左任務右編輯器 */
-#mission{width:380px;flex:none;background:var(--paper);border-right:3px solid var(--ink);overflow:auto;padding:14px}
+#mission{width:clamp(280px,24vw,380px);flex:none;background:var(--paper);border-right:3px solid var(--ink);overflow:auto;padding:14px}
 #mission .mcard{background:#fff;border:2px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);padding:12px 14px;margin-bottom:12px}
 #mission h3{margin:0 0 6px;font-size:16px}
 #mission p{margin:5px 0;font-size:15px;line-height:1.65}
@@ -72,3 +72,10 @@ ul.check li.bad i{background:var(--warn);border-color:var(--warn)}
 #editor{position:absolute;inset:0}
 #editorLoading{position:absolute;inset:0;z-index:5;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
 #toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:8px 20px;font-size:15px;display:none;z-index:1000;max-width:80vw}
+
+#p-code.split{overflow-x:auto}
+#editorWrap{min-width:1000px}
+#mission.collapsed{width:44px;padding:6px;overflow:hidden}
+#mission.collapsed #missionBody{display:none}
+#mtoggle{display:block;width:100%;border:2px solid var(--ink);background:var(--gold);border-radius:10px;font-weight:700;font-size:14px;padding:6px 0;margin-bottom:10px;cursor:pointer}
+#mission.collapsed #mtoggle{padding:8px 0;writing-mode:vertical-rl;height:140px}
