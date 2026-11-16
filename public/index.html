@@ -1,81 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>遊戲街機城</title>
-<style>
-  :root{--ink:#2b2a33;--gold:#f2b632;--red:#e8483a}
-  *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;background:#1b1e3a;color:#fff;font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
-  header{display:flex;align-items:center;gap:16px;padding:12px 24px;background:#12142b;border-bottom:3px solid var(--gold)}
-  header h1{margin:0;font-size:26px;letter-spacing:4px;color:var(--gold);text-shadow:0 0 12px #f2b63288}
-  header span{opacity:.75;font-size:15px}
-  main{max-width:1100px;margin:0 auto;padding:22px 16px 40px}
-  .lead{font-size:17px;line-height:1.7;margin:0 0 14px}
-  #city{position:relative;height:420px;border:3px solid var(--gold);border-radius:18px;overflow:hidden;
-    background:linear-gradient(#2b2f6b 0%,#3d3a86 55%,#2a2850 55%,#2a2850 100%)}
-  #road{position:absolute;left:0;right:0;bottom:70px;height:46px;background:#3a3a4a;border-top:4px dashed #ffffff55}
-  #stars{position:absolute;inset:0;background-image:radial-gradient(#fff 1px,transparent 1.5px);background-size:60px 52px;opacity:.35}
-  .shop{position:absolute;bottom:116px;width:220px;height:230px;border:3px solid var(--ink);border-radius:14px 14px 4px 4px;
-    padding:10px;text-align:center;color:var(--ink);text-decoration:none;box-shadow:5px 5px 0 #0008;transition:transform .15s}
-  .shop.open:hover{transform:translateY(-8px)}
-  .shop .roof{position:absolute;top:-22px;left:-8px;right:-8px;height:26px;border:3px solid var(--ink);border-radius:8px;background:var(--red)}
-  .shop .icon{font-size:52px;margin-top:20px}
-  .shop h2{margin:4px 0;font-size:21px}
-  .shop p{margin:2px 0;font-size:14px;line-height:1.5}
-  .shop.open{background:#fff3c9;cursor:pointer}
-  .shop.locked{background:#9a98aa;filter:saturate(.3);cursor:not-allowed}
-  .shop.locked .roof{background:#666}
-  .dots{display:flex;gap:4px;justify-content:center;margin-top:8px;flex-wrap:wrap}
-  .dots i{width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--ink)}
-  .dots i.on{background:#2f8f5b}
-  .go{display:inline-block;margin-top:8px;padding:5px 16px;background:var(--red);color:#fff;border:2px solid var(--ink);border-radius:20px;font-weight:700}
-  #car{position:absolute;bottom:78px;left:-80px;font-size:34px;animation:drive 14s linear infinite}
-  @keyframes drive{to{left:105%}}
-  .panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
-  .box{background:#12142b;border:2px solid #4a4d8a;border-radius:14px;padding:16px 18px}
-  .box h3{margin:0 0 10px;color:var(--gold)}
-  .chips{display:flex;gap:8px;flex-wrap:wrap}
-  .chip{padding:6px 12px;border-radius:20px;background:#2a2d5e;border:2px dashed #6a6db0;font-size:15px;opacity:.6}
-  .chip.on{background:var(--gold);color:var(--ink);border:2px solid var(--ink);opacity:1;font-weight:700}
-  footer{margin-top:30px;font-size:13px;opacity:.65;text-align:center}
-  footer a{color:inherit}
-  @media(max-width:900px){.panels{grid-template-columns:1fr}.shop{width:160px}}
-</style>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e8483a'/%3E%3Ccircle cx='11' cy='13' r='3' fill='%23fff'/%3E%3Ccircle cx='21' cy='13' r='3' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/park.css">
 </head>
-<body>
-<header><h1>遊戲街機城</h1><span>每間店做一款遊戲。通關就能解鎖強化模組，把你的遊戲升級。</span></header>
-<main>
-  <p class="lead">歡迎來到街機城！每一間店都是一款遊戲：先玩玩看，再拆開來研究，最後自己做出來。老師會依照進度開放新的店。</p>
-  <div id="city">
-    <div id="stars"></div><div id="road"></div><div id="car">🚗</div>
-    <a class="shop open" href="/level1.html" style="left:4%"><div class="roof"></div><div class="icon">🧺</div><h2>接東西</h2><p>接住掉下來的水果</p><div class="dots" id="dots"></div><span class="go" id="go">進店</span></a>
-    <div class="shop locked" style="left:29%"><div class="roof"></div><div class="icon">🍉</div><h2>切水果</h2><p>等老師開放</p></div>
-    <div class="shop locked" style="left:54%"><div class="roof"></div><div class="icon">☄️</div><h2>躲隕石</h2><p>等老師開放</p></div>
-    <div class="shop locked" style="left:79%;width:19%;min-width:150px"><div class="roof"></div><div class="icon">👾</div><h2>打怪</h2><p>等老師開放</p></div>
-  </div>
-  <div class="panels">
-    <div class="box"><h3>我的強化模組</h3>
-      <div class="chips" id="mods"><span class="chip" data-m="3">❤️ 生命</span><span class="chip" data-m="3">💣 炸彈</span><span class="chip" data-m="3">⚡ 加速</span></div>
-      <p style="font-size:14px;opacity:.8;margin:10px 0 0">在「接東西」過了基本版，就會解鎖。</p></div>
-    <div class="box"><h3>我的進度</h3><div id="prog" style="font-size:16px;line-height:1.8"></div></div>
-  </div>
-  <footer>本站使用開源的 Scratch 編輯器（AGPL-3.0）。<a href="https://github.com/aitest-ai/scratch-course-platform">原始碼</a>
-    ・<a href="/play.html">編輯器原型</a></footer>
-</main>
-<script>
-(function(){
-  var S=null;try{S=JSON.parse(localStorage.getItem('ninja-l1-v1'))}catch(e){}
-  var done=(S&&S.done)||[];var step=(S&&S.step)||0;
-  var d=document.getElementById('dots');
-  for(var i=0;i<8;i++){var x=document.createElement('i');if(done[i])x.className='on';d.appendChild(x)}
-  var n=done.filter(Boolean).length;
-  document.getElementById('go').textContent=n===0?'進店':(n>=8||done[7]?'再玩一次':'繼續');
-  var mods=done[4];
-  document.querySelectorAll('.chip').forEach(function(c){if(mods)c.classList.add('on')});
-  document.getElementById('prog').innerHTML='接東西：<b>'+n+'</b> / 8 步'+(done[7]?' 🏅 已通關':'');
-})();
-</script>
+<body class="park">
+<canvas id="park" aria-label="遊戲街機城的 3D 地圖"></canvas>
+<header class="bar"><strong>遊戲街機城</strong><span id="progress" class="chip"></span></header>
+<section class="card" id="card">
+  <h1>歡迎來到街機城</h1>
+  <p>每一間店是一款遊戲。先玩玩看，再拆開研究，最後自己做出來。通關就能解鎖強化模組，讓中間那台街機升級。</p>
+  <div class="mods" id="mods"></div>
+  <a class="go" id="go" href="/level1.html">進「接東西」▶</a>
+  <p class="muted" id="hint">拖一下畫面可以轉方向，點亮燈的店也可以進去。</p>
+</section>
+<details class="list" id="list"><summary>店家清單</summary><ol id="rooms"></ol></details>
+<div class="toast" id="toast" role="status" hidden></div>
+<footer class="src">使用開源 Scratch 編輯器（AGPL-3.0）・<a href="https://github.com/aitest-ai/scratch-course-platform">原始碼</a></footer>
+<script type="module" src="/park3d.js"></script>
 </body>
 </html>

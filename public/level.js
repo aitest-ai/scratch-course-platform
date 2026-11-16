@@ -492,7 +492,7 @@
       } else {
         d.className = 'fb show good'; d.innerHTML = '';
         d.append(h('div', {}, curMode === 'power' ? '✓ 強化完成！你的遊戲升級了。按綠旗玩玩看！' : '✓ 通過！試跑 4 秒：籃子會跟著按鍵移動，場上最多 ' + r.maxClones + ' 個分身。'));
-        var idx = { build: 3, power: 4, debug: 5 }[curMode]; done(idx);
+        var idx = { build: 3, power: 4, debug: 5 }[curMode]; if (curMode === 'power') { S.mods = POWERS.filter(function (p) { return a[p.k]; }).map(function (p) { return p.k; }); save(); } done(idx);
         d.append(h('div', { class: 'row' }, h('span'), h('button', { class: 'btn', onclick: function () { go(idx + 1); } }, '下一步')));
       }
     });
