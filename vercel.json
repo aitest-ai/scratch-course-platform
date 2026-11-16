@@ -1,0 +1,15 @@
+{
+  "buildCommand": "bash scripts/build-editor.sh",
+  "outputDirectory": "public",
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/chunks/:path*", "destination": "/editor/chunks/:path*" },
+    { "source": "/static/:path*", "destination": "/editor/static/:path*" },
+    { "source": "/libraries/:path*", "destination": "/editor/libraries/:path*" },
+    { "source": "/extension-worker.js", "destination": "/editor/extension-worker.js" },
+    { "source": "/:hex([0-9a-f]{32}).hex", "destination": "/editor/:hex.hex" }
+  ],
+  "headers": [
+    { "source": "/editor/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] }
+  ]
+}

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>忍者道場（原型）</title>
+<style>
+  :root { --ink:#2b2a33; --paper:#fbf7ef; --red:#c8402f; --gold:#e0a526; --ok:#2f8f5b; --warn:#c8402f; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif; color:var(--ink); }
+  #app { display:flex; height:100vh; }
+  #panel { width:360px; flex:none; background:var(--paper); border-right:3px solid var(--ink); display:flex; flex-direction:column; overflow:auto; }
+  #panel header { background:var(--ink); color:#fff; padding:14px 18px; }
+  #panel header h1 { margin:0; font-size:20px; letter-spacing:2px; }
+  #panel header p { margin:4px 0 0; font-size:13px; opacity:.8; }
+  .card { margin:14px; padding:14px 16px; background:#fff; border:2px solid var(--ink); border-radius:12px; box-shadow:3px 3px 0 var(--ink); }
+  .card h2 { margin:0 0 8px; font-size:16px; }
+  .card p { margin:6px 0; font-size:15px; line-height:1.6; }
+  button { font:inherit; font-size:15px; font-weight:700; padding:9px 14px; border:2px solid var(--ink); border-radius:10px; background:var(--gold); color:var(--ink); cursor:pointer; box-shadow:2px 2px 0 var(--ink); }
+  button:active { transform:translate(2px,2px); box-shadow:none; }
+  button.secondary { background:#fff; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  #hud { display:flex; align-items:baseline; gap:8px; }
+  #cloneCount { font-size:40px; font-weight:900; line-height:1; }
+  #cloneCount.bad { color:var(--warn); }
+  #cloneNote { font-size:14px; }
+  ul#results { list-style:none; padding:0; margin:8px 0 0; }
+  ul#results li { margin:8px 0; padding:8px 10px; border-radius:8px; font-size:15px; line-height:1.5; }
+  li.ok { background:#e6f5ec; border-left:6px solid var(--ok); }
+  li.bad { background:#fdecea; border-left:6px solid var(--warn); }
+  li.info { background:#f1f1f4; border-left:6px solid #888; }
+  #editor { flex:1; min-width:0; position:relative; }
+  #loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:18px; background:#fff; z-index:5; }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <header>
+      <h1>忍者道場</h1>
+      <p>原型驗證版：左邊是道場，右邊是真正的積木編輯器</p>
+    </header>
+
+    <div class="card">
+      <h2>今日工序：影分身之術</h2>
+      <p>讓水果從天上掉下來，每一顆都是一個「分身」。</p>
+      <p>先做做看，再按「檢查我的作品」。</p>
+    </div>
+
+    <div class="card">
+      <h2>場上分身數量</h2>
+      <div id="hud"><span id="cloneCount">0</span><span id="cloneNote">個（越玩越多是正常的嗎？）</span></div>
+    </div>
+
+    <div class="card">
+      <h2>檢查站</h2>
+      <div class="row">
+        <button id="btnCheck">檢查我的作品</button>
+        <button id="btnSvg" class="secondary">加入一顆水果素材</button>
+      </div>
+      <ul id="results"></ul>
+    </div>
+  </aside>
+  <main id="editor"><div id="loading">道場準備中…</div></main>
+</div>
+
+<script src="/editor/scratch-gui-standalone.js"></script>
+<script src="/play.js"></script>
+</body>
+</html>

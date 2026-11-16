@@ -1,0 +1,6 @@
+node_modules/
+public/editor/
+.vercel/
+.env*
+.upstream/
+*.log
