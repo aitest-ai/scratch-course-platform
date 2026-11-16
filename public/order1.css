@@ -1,0 +1,101 @@
+/* 訂單 #1：櫃台面板 + 設計師工作台（接在 intro.css 後面） */
+#coins{color:var(--gold);font-weight:900;font-size:18px;background:#ffffff18;border:2px solid #ffffff44;border-radius:99px;padding:2px 14px}
+#top #steps{gap:4px}
+#top .dot{font-size:12px;padding:3px 9px 3px 3px}
+#top .dot b{width:20px;height:20px;font-size:11px}
+.dot.todo{opacity:.5}
+.nameplate.me{background:#2f9d6a}
+
+/* ===== 右側面板（需求單／工作單） ===== */
+#side{position:fixed;right:18px;top:66px;bottom:16px;z-index:4;width:min(520px,calc(100vw - 36px));background:#fffdf6;border:3px solid #5b4fd0;border-radius:18px;box-shadow:0 0 0 3px #1d1840,0 10px 30px #000a;padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+#side[hidden]{display:none}
+#side.in{animation:sidein .45s cubic-bezier(.2,1.2,.4,1)}
+@keyframes sidein{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+#side h2{margin:0;font-size:22px}
+#side .sub{font-size:15px;line-height:1.6;color:#4a4670;margin:0}
+.vague{background:#fff3c6;border-radius:12px;padding:8px 12px;font-size:16px;line-height:1.6;color:#5a3a10;position:relative}
+.vague small{display:block;font-weight:700;color:#8a6a20;font-size:13px;margin-bottom:2px}
+.qlist{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:900px){.qlist{grid-template-columns:1fr}}
+.qbtn{text-align:left;border:2px solid #cfc9f0;background:#f6f3ff;border-radius:12px;padding:8px 10px;font-size:15px;line-height:1.45;font-weight:700;color:var(--ink);transition:.15s}
+.qbtn:hover{border-color:#5b4fd0;background:#ece8ff;transform:translateY(-1px)}
+.qbtn.asked{background:#e6f5ec;border-color:#2f8f5b;color:#1f6a43}
+.qbtn.asked::after{content:" ✓"}
+.qbtn.off{background:#f1efe8;border-color:#d9d2c3;color:#8a8576}
+.qbtn small{display:block;font-weight:500;font-size:12px;color:#6a66a8;margin-top:2px}
+.sheet{background:#fffbea;border:2px dashed #d9b84a;border-radius:12px;padding:10px 14px;position:relative}
+.sheet h3{margin:0 0 6px;font-size:16px;color:#7a5a10;letter-spacing:1px}
+.sheet ul{margin:0;padding:0;list-style:none}
+.sheet li{font-size:17px;line-height:1.55;margin:4px 0;padding-left:22px;position:relative;font-family:"Kaiti TC","BiauKai","DFKai-SB","Noto Sans TC",cursive}
+.sheet li::before{content:"✎";position:absolute;left:0;color:#c8402f}
+.sheet li.empty{color:#b5a77a;font-style:italic}
+.sheet li.empty::before{content:"？"}
+.sheet li.new{animation:inkin .8s}
+@keyframes inkin{from{background:#ffe27a;transform:translateX(-6px)}to{background:transparent;transform:none}}
+.must{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:14px;font-weight:700;color:#4a4670}
+.must i{font-style:normal;width:22px;height:22px;border-radius:50%;border:2px solid #aaa6e0;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:#fff;background:#fff}
+.must i.on{background:#2f8f5b;border-color:#2f8f5b}
+.sidebtns{display:flex;gap:10px;justify-content:space-between;margin-top:auto;padding-top:6px}
+.stamp{position:absolute;right:14px;top:6px;border:5px solid #c8402f;color:#c8402f;border-radius:12px;padding:2px 14px;font-weight:900;font-size:28px;letter-spacing:4px;transform:rotate(-12deg);background:#fff9;animation:stampin .5s cubic-bezier(.2,2,.4,1) both}
+@keyframes stampin{from{transform:rotate(-12deg) scale(3);opacity:0}to{transform:rotate(-12deg) scale(1);opacity:1}}
+.small{font-size:14px!important;padding:5px 14px!important}
+
+/* ===== 設計師工作台 ===== */
+#bench{position:fixed;left:0;right:0;top:52px;bottom:0;z-index:3;background:#1a1442 radial-gradient(circle at 15% 0,#33298a 0,#1a1442 60%);display:flex;flex-direction:column}
+#bench[hidden]{display:none}
+#bhead{height:46px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:linear-gradient(#5a3b1e,#432b14);border-bottom:3px solid #1d1840;color:#ffe9c4}
+.btitle{font-weight:900;letter-spacing:2px}
+.bticket{flex:1;font-size:14px;background:#fffbea;color:#5a3a10;border:2px dashed #b99a3a;border-radius:8px;padding:3px 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bwork{flex:1;position:relative;display:flex;min-height:0;overflow-x:auto}
+#slip{width:clamp(270px,22vw,340px);flex:none;overflow:auto;padding:12px;background:#2a2060;border-right:3px solid #5b4fd0;display:flex;flex-direction:column;gap:10px}
+.scard{background:#fffdf6;border:2px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 #0a0826;padding:10px 13px}
+.scard h3{margin:0 0 6px;font-size:16px}
+.scard p{margin:4px 0;font-size:15px;line-height:1.6}
+.scard.paper{background:#fffbea;border:2px dashed #d9b84a;box-shadow:none}
+.scard.paper li{font-family:"Kaiti TC","BiauKai","DFKai-SB","Noto Sans TC",cursive;font-size:16px}
+ul.check{list-style:none;padding:0;margin:6px 0 0}
+ul.check li{display:flex;gap:8px;align-items:flex-start;font-size:15px;line-height:1.5;margin:7px 0}
+ul.check li i{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid #aaa;background:#fff;font-style:normal;text-align:center;font-size:13px;line-height:18px;color:#fff}
+ul.check li.ok i{background:#2f8f5b;border-color:#2f8f5b}
+ul.check li.ok{color:#1f6a43}
+.hud{display:flex;align-items:baseline;gap:8px}
+.hud b{font-size:32px;line-height:1}.hud b.bad{color:#c8402f}
+.bossfeed{display:flex;flex-direction:column;gap:6px}
+.bmsg{display:flex;gap:8px;align-items:flex-start;font-size:14.5px;line-height:1.6}
+.bmsg .av{flex:none;width:34px;height:34px;border-radius:50%;background:#b2662b;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:18px}
+.bmsg .tx{background:#fff3e2;border:2px solid #d9b98a;border-radius:4px 12px 12px 12px;padding:5px 10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.fb{margin-top:8px;padding:8px 12px;border-radius:10px;font-size:15px;line-height:1.6;display:none}
+.fb.show{display:block}.fb.good{background:#e6f5ec;border-left:6px solid #2f8f5b}.fb.warn{background:#fff1dc;border-left:6px solid var(--gold)}
+#bscreen{flex:1;min-width:960px;position:relative;margin:8px;border:6px solid #0b0826;border-radius:16px;box-shadow:0 0 0 3px #5b4fd0,0 0 40px #6a55ff55;overflow:hidden;background:#fff}
+#editor{position:absolute;inset:0}
+#editorLoading{position:absolute;inset:0;z-index:5;background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:18px}
+#bpage{position:absolute;inset:0;z-index:6;overflow:auto;padding:18px;background:#1a1442 radial-gradient(circle at 15% 0,#33298a 0,#1a1442 60%)}
+#bpage[hidden]{display:none}
+.pcard{max-width:900px;margin:0 auto;background:#fffdf6;border:3px solid #5b4fd0;border-radius:18px;box-shadow:0 0 0 3px #1d1840,0 8px 28px #0009;padding:20px 24px}
+.pcard h2{margin:0 0 6px;font-size:24px}
+.pcard .lead{font-size:17px;line-height:1.75;margin:6px 0 12px}
+.ws{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
+@media(max-width:860px){.ws{grid-template-columns:1fr}}
+.wsbox{border:2px solid #cfc9f0;border-radius:12px;padding:12px;background:#f6f3ff}
+.wsbox h3{margin:0 0 8px;font-size:17px}
+.prev{height:130px;background:#fff;border:2px solid #cfc9f0;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.prev svg{max-height:110px;max-width:160px}
+.choices{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.choices button{border:2px solid var(--ink);background:#fff;border-radius:16px;padding:4px 12px;font-size:14px;font-weight:700}
+.choices button.on{background:var(--gold)}
+.colors{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.colors button{width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px var(--ink)}
+.colors button.on{box-shadow:0 0 0 4px var(--red)}
+.quiz-q{font-size:18px;font-weight:700;line-height:1.6;margin:12px 0 4px}
+.optbtn{display:block;width:100%;text-align:left;font-size:16px;border:2px solid #cfc9f0;background:#f6f3ff;border-radius:12px;padding:9px 12px;margin:6px 0}
+.optbtn.right{background:#e6f5ec;border-color:#2f8f5b}.optbtn.wrong{background:#fdecea;border-color:var(--red)}
+.selfck{list-style:none;padding:0;margin:8px 0}
+.selfck li{display:flex;gap:10px;align-items:center;font-size:17px;line-height:1.6;background:#f6f3ff;border:2px solid #cfc9f0;border-radius:12px;padding:8px 12px;margin:8px 0;cursor:pointer}
+.selfck li.on{background:#e6f5ec;border-color:#2f8f5b}
+.selfck li i{flex:none;width:26px;height:26px;border-radius:8px;border:3px solid #5b4fd0;background:#fff;font-style:normal;text-align:center;line-height:20px;color:#fff;font-weight:900}
+.selfck li.on i{background:#2f8f5b;border-color:#2f8f5b}
+.coinfly{position:fixed;z-index:40;font-size:28px;pointer-events:none;transition:transform .9s cubic-bezier(.5,-0.3,.6,1),opacity .9s}
+.rewards{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.rewards span{background:#fff3c6;border:2px solid #e0a526;border-radius:99px;padding:4px 14px;font-weight:700;font-size:15px}
+@media(max-width:700px){#side{top:60px;bottom:auto;max-height:55vh}}

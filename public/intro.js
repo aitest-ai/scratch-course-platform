@@ -320,7 +320,7 @@ async function stepGo(tk) {
   await talk([B(`${nm()}，你已經知道遊戲是什麼、客人想要什麼、Bug 怪怎麼對付了。`), B('第一張訂單來了！'), {w: '水果攤老闆娘', t: '拜託你了！我的第一張訂單：接水果！'}, B('把卡帶插進舊街機，把它做出來吧！')], tk);
   if (dead(tk)) return;
   panel(h('h2', {}, `${nm()}，第一張訂單：接水果`), h('div', {class: 'lead'}, '準備好就插入卡帶，進到編輯器開始做。'),
-    nav(() => go(6), h('button', {class: 'btn', onclick: () => { done(7); withInsert('catch', () => setTimeout(() => { location.href = '/level1.html'; }, 400)); }}, '接下訂單，插入卡帶')));
+    nav(() => go(6), h('button', {class: 'btn', onclick: () => { done(7); withInsert('catch', () => setTimeout(() => { location.href = '/order1.html'; }, 400)); }}, '接下訂單，插入卡帶')));
 }
 
 /* ---------- 啟動 ---------- */

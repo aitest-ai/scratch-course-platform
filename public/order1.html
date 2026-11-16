@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>星光遊戲工作室｜訂單 #1 接水果</title>
+<link rel="stylesheet" href="/intro.css">
+<link rel="stylesheet" href="/order1.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<header id="top">
+  <div class="brand"><a href="/" title="回街機城">遊戲街機城</a><small>訂單 #1・水果攤老闆娘</small></div>
+  <nav id="steps" aria-label="訂單進度"></nav>
+  <div id="coins" title="金幣">🪙 <b id="coinn">0</b></div>
+  <button id="mute" title="音效開關">🔊</button>
+</header>
+<div id="flash"></div>
+
+<!-- 3D 櫃台場景前的資訊面板（需求單、拆工作單等） -->
+<aside id="side" hidden></aside>
+
+<!-- 設計師工作台：左邊訂單單、右邊真的 Scratch 編輯器 -->
+<section id="bench" hidden>
+  <div id="bhead">
+    <div class="btitle">🛠️ 設計師工作台</div>
+    <div class="bticket" id="bticket"></div>
+    <button class="btn sec small" id="callboss">📣 找老闆</button>
+  </div>
+  <div id="bwork">
+    <aside id="slip"></aside>
+    <div id="bscreen">
+      <div id="editorLoading">工作台準備中…第一次會慢一點</div>
+      <div id="editor"></div>
+    </div>
+    <div id="bpage" hidden></div>
+  </div>
+</section>
+
+<div id="dlg" hidden>
+  <div id="dlgname" class="nameplate"></div>
+  <div id="dlgtext"></div>
+  <div id="dlgchoices"></div>
+  <div id="dlgnext" hidden>▼</div>
+</div>
+<div id="toast" role="status" hidden></div>
+<script type="module" src="/order1.js"></script>
+</body>
+</html>
