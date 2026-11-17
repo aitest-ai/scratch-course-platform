@@ -1,3 +1,4 @@
+import {showPic, hidePic} from '/pics.js';
 // RPG 一句一框對話引擎（訂單頁使用；開幕導覽 intro.js 有自己的同款）
 // 需要頁面上有 #dlg #dlgname #dlgtext #dlgchoices #dlgnext，以及選用的 #card（說話時淡出）
 const $ = s => document.querySelector(s);
@@ -11,7 +12,7 @@ const el = (tag, attrs, ...kids) => {
 export function createRpg({sfx = () => {}, toast = () => {}, getName = () => '新人', onSpeak = () => {}, onEnd = () => {}, onTyped = () => {}} = {}) {
   let token = 0, skipFn = null;
   const dead = tk => tk !== token;
-  const hide = () => { const d = $('#dlg'); d.hidden = true; const c = $('#card'); c && c.classList.remove('mute'); skipFn = null; };
+  const hide = () => { hidePic(); const d = $('#dlg'); d.hidden = true; const c = $('#card'); c && c.classList.remove('mute'); skipFn = null; };
 
   // l = {w: 'boss' | '' (旁白) | '@me' | 其他名字, t: 台詞, choices?: [..], input?: true, do?: fn}
   function showLine(l, tk) {
@@ -25,6 +26,7 @@ export function createRpg({sfx = () => {}, toast = () => {}, getName = () => '�
       d.classList.toggle('narr', !who);
       const tx = $('#dlgtext'), ch = $('#dlgchoices'), nx = $('#dlgnext');
       tx.textContent = ''; ch.replaceChildren(); nx.hidden = true;
+      if (l.img !== undefined) showPic(l.img);
       if (l.do) l.do();
       const full = l.t; let i = 0, typing = true, timer = null;
       const finish = () => {

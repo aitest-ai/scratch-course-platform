@@ -1,6 +1,7 @@
 // 開幕導覽 v3：RPG 一句一框對話＋第一人稱。被卡帶吸進「星光遊戲工作室」→ 為什麼做遊戲 → 拆開遊戲看積木 → 四要素 → 客人與樣品 → 訂單規格 → Bug 與麻煩事件 → 接單出發
 import {GAMES, META, sfx, setMuted, isMuted} from '/minigames.js';
 import {SKETCH} from '/sketches.js';
+import {showPic, hidePic} from '/pics.js';
 
 const $ = s => document.querySelector(s);
 function h(tag, attrs, ...kids) {
@@ -25,7 +26,7 @@ const CUSTOMERS = {
   mei: {game: 'catch', job: '水果攤老闆娘', x: -2.1, z: 1.8, intro: '在街角賣了三十年水果，嗓門大、手腳快，最怕水果賣不完。', say: '「就是……水果會從天上掉下來，然後……要很好玩！」', want: ['水果一個一個從上面掉下來', '玩的人用籃子左右移動去接', '接到水果就加分，接到炸彈會扣命']},
   ting: {game: 'slice', job: '獵人', x: -.7, z: 1.8, intro: '在山裡打獵多年，最近發現自己的刀工有點生疏，怕退步。', say: '「我想要一個會自動丟水果的遊戲，練我的速度和判斷力！」', want: ['水果自動被丟到空中（練速度）', '用滑鼠劃過去就把水果切開', '要分得出水果和炸彈，切到炸彈會扣命（練判斷力）']},
   lin: {game: 'dodge', job: '太空站站長', x: 0.7, z: 1.8, intro: '在太空站待了十年，什麼風浪都見過，只怕新人被隕石撞到。', say: '「石頭一直打過來，我的人要想辦法躲開，躲越久越厲害。」', want: ['隕石從上面不停掉下來', '玩的人移動太空船去躲', '撐越久，分數越高']},
-  yu: {game: 'fight', job: '冒險隊長', x: 2.1, z: 1.8, intro: '帶著隊伍到處打怪的老手，說話很大聲，從來不怕怪物。', say: '「我要發射子彈！把怪物通通打趴！」', want: ['英雄在下面左右移動', '按空白鍵發射子彈打怪物', '怪物越來越多，血量用完就輸']}
+  yu: {game: 'fight', job: '冒險隊長', x: 2.1, z: 1.8, intro: '帶著隊伍在森林裡巡邏的老手，說話很大聲，最怕史萊姆衝進營地。', say: '「史萊姆從右邊一直衝過來，我要用弓箭把牠們射趴！」', want: ['弓箭手站在左邊，上下移動', '按空白鍵射箭，史萊姆要射兩下才倒', '史萊姆衝過營地線就扣血，血用完就輸']}
 };
 
 let view = null;
@@ -46,6 +47,7 @@ function showLine(l, tk) {
     d.classList.toggle('narr', !who);
     const tx = $('#dlgtext'), ch = $('#dlgchoices'), nx = $('#dlgnext');
     tx.textContent = ''; ch.replaceChildren(); nx.hidden = true;
+    if (l.img !== undefined) showPic(l.img);
     if (l.do) l.do();
     const full = l.t; let i = 0, typing = true, timer = null;
     const finish = () => {
@@ -75,7 +77,7 @@ async function talk(lines, tk = token) {
   if (!dead(tk)) hideDlg();
   return out;
 }
-function hideDlg() { const d = dlg(); d.hidden = true; $('#card').classList.remove('mute'); skipFn = null; }
+function hideDlg() { hidePic(); const d = dlg(); d.hidden = true; $('#card').classList.remove('mute'); skipFn = null; }
 const B = (t, o) => Object.assign({w: 'boss', t}, o || {});          // 老闆說
 const N = (t, o) => Object.assign({w: '', t}, o || {});              // 旁白
 
@@ -108,12 +110,15 @@ async function stepFall(tk) {
     S.name = nameIn; save();
   } else stage('boss');
   const r2 = await talk([
-    B(`${nm()}，好名字！`), B('老實說，工作室快倒閉了……', {do: () => view && view.shot('cabinet')}),
-    B('店裡唯一那台舊街機當機了，畫面全是亂碼。'), B('訂單堆成山，我只會收訂單，不會做遊戲。', {do: () => view && view.shot('boss')}),
-    B('但我看得出來，你是做遊戲的料！'),
-    B('來當我的見習設計師，好不好？', {choices: ['好，我來幫忙！', '當設計師要做什麼？']})], tk);
+    B(`${nm()}，好名字！`), B('老實說，工作室快撐不下去了……', {do: () => view && view.shot('cabinet')}),
+    B('你看那台街機，已經好久沒有新遊戲可以放。', {do: () => view && view.shot('cabinet')}),
+    B('我們一直做不出新的有趣遊戲，客人玩膩了，就不再上門。', {do: () => view && view.shot('boss')}),
+    B('我只會收訂單，想不出好點子，也不會做遊戲。'),
+    B('不過最近有幾位客人，想請我們訂做遊戲，這是翻身的機會！'),
+    B('我看得出來，你是想得出好點子的人！'),
+    B('來當我的見習設計師，幫工作室做出更有趣的遊戲，好不好？', {choices: ['好，我來幫忙！', '當設計師要做什麼？']})], tk);
   if (dead(tk)) return;
-  if (r2 === 1) await talk([B('做出客人想要的遊戲就行！'), B('我會一步一步教你，放心。', {choices: ['好，我來幫忙！']})], tk);
+  if (r2 === 1) await talk([B('做出客人想要、又好玩的遊戲就行！'), B('我會一步一步教你，放心。', {choices: ['好，我來幫忙！']})], tk);
   if (dead(tk)) return;
   cheer(); view && view.burst({x: 0, y: 2, z: -1.8}, 0xffc83d, 60, 4); done(0); go(1);
 }
@@ -124,20 +129,20 @@ async function stepWhy(tk) {
   const ME = (t, o) => Object.assign({w: nm(), t}, o || {});
   await talk([B(`${nm()}，動手之前，你心裡是不是有個疑問？`), ME('……老闆，我只是個學生，為什麼要學做遊戲啊？', {}),
     B('問得好！先聽我說一個祕密。'), B('你每天玩的遊戲，背後都有人決定：蘋果掉多快、怪物長怎樣、幾條命。'),
-    B('玩遊戲，是照別人的規則走。做遊戲，規則你說了算！', {do: () => boss() && boss().once('Cheer')}),
+    B('玩遊戲，是照別人的規則走。做遊戲，規則你說了算！', {img: 'rules', do: () => boss() && boss().once('Cheer')}),
     ME('規則我說了算……聽起來有點酷。', {choices: ['那做遊戲會不會很難？']})], tk);
   if (dead(tk)) return;
-  await talk([B('哈哈，一定會出錯，這很正常。'), B('遊戲常常冒出 Bug，像蘋果穿過籃子、分數亂跳。'),
+  await talk([B('哈哈，一定會出錯，這很正常。'), B('遊戲常常冒出 Bug，像蘋果穿過籃子、分數亂跳。', {img: 'bug'}),
     B('可是找出哪裡壞掉、想辦法修好，就是軟體工程師每天在做的事。', {do: () => boss() && boss().once('Interact')}),
     ME('所以抓 Bug，其實是在練習當工程師？', {}), B('完全正確！你一開口就比我還懂。'),
     ME('那我學到的東西，只能拿來做遊戲嗎？', {choices: ['這個我也想知道']})], tk);
   if (dead(tk)) return;
-  await talk([B('不只喔。你用積木學的「變數、迴圈、條件」，'), B('手機遊戲、Python 程式用的是同一套想法。'),
+  await talk([B('不只喔。你用積木學的「變數、迴圈、條件」，', {img: 'blocks'}), B('手機遊戲、Python 程式用的是同一套想法。'),
     B('今天腦袋裡冒出的點子，一堂課之後就能在螢幕上動起來，還能讓別人玩得很開心。'),
     ME('那我做完訂單，有什麼好處？', {choices: ['快說快說！']})], tk);
   if (dead(tk)) return;
   sfx('right'); view && view.burst({x: 1.4, y: 1.4, z: 0}, 0xffc83d, 40, 3);
-  await talk([B('做完訂單賺金幣，工作室跟你的機台都能升級！', {do: () => boss() && boss().once('Cheer')}),
+  await talk([B('做完訂單賺金幣，工作室跟你的機台都能升級！', {img: 'reward', do: () => boss() && boss().once('Cheer')}),
     B('最後，你的遊戲會放上那台真正的街機，客人用搖桿親自玩！'),
     ME('哇，我的遊戲被別人玩……我要做！'),
     B('好！一句話整理：玩家變創作者，Bug 變挑戰，點子變真的。'), B('接下來，我帶你看遊戲的「內臟」。')], tk);
@@ -261,7 +266,7 @@ async function stepRecipe(tk) {
   const ids = Object.keys(META);
   const Q = [
     ['想讓「滑鼠劃過就切開」，要用到滑鼠的 x、y 座標。這最像哪一款？', 'slice'],
-    ['「按下空白鍵就發射一顆子彈」，這最像哪一款？', 'fight'],
+    ['「按下空白鍵就射出一支箭」，這最像哪一款？', 'fight'],
     ['用計時器算出「撐了幾秒」當分數，這最像哪一款？', 'dodge'],
     ['左右鍵移動籃子，再用「分身」做出一直掉下來的東西，這最像哪一款？', 'catch']
   ];

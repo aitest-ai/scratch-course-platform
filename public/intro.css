@@ -128,3 +128,7 @@ body.flat #gl{display:none}body.flat{overflow:auto}
 @media(max-width:900px){#brief{grid-template-columns:1fr;width:calc(100vw - 24px)}}
 
 .bsk .bsay{margin-top:14px;font-size:20px;line-height:1.75;padding:14px 16px}
+
+#card:empty{display:none}
+#brief:empty{display:none}
+#brief{width:min(1040px,calc(100vw - 40px));grid-template-columns:1.25fr 1fr;min-height:auto}

@@ -80,7 +80,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     if (scrMode === 'glitch') {
       g.fillStyle = '#0a0a22'; g.fillRect(0, 0, w, h);
       for (let i = 0; i < 14; i++) { g.fillStyle = ['#ff4fa3', '#38e1ff', '#ffc83d', '#7dff7d'][i % 4] + '88'; const y = (i * 37 + t * 140) % h; g.fillRect(Math.sin(t * 5 + i) * 40 + 40, y, 60 + (i * 31 % 120), 5 + (i % 3) * 4); }
-      g.fillStyle = '#fff'; g.font = `900 22px ${FONT}`; g.textAlign = 'center'; g.fillText('ERROR 0xBUG', w / 2 + Math.sin(t * 30) * 3, 84); g.font = `700 14px ${FONT}`; g.fillStyle = '#ff9aa8'; g.fillText('沒有遊戲可以玩…', w / 2, 112);
+      g.fillStyle = '#fff'; g.font = `900 22px ${FONT}`; g.textAlign = 'center'; g.fillText('NO NEW GAME', w / 2, 84); g.font = `700 14px ${FONT}`; g.fillStyle = '#9aa8ff'; g.fillText('還沒有好玩的新遊戲…', w / 2, 112);
       if (Math.random() < .08) { g.fillStyle = '#ffffff55'; g.fillRect(0, 0, w, h); }
     } else if (scrMode === 'boot') {
       const p = Math.min(1, (t - bootStart) / 1.1);
@@ -115,7 +115,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
       if (id === 'catch') { g.fillStyle = '#c98a4b'; g.beginPath(); g.moveTo(-50, 10); g.lineTo(50, 10); g.lineTo(38, 56); g.lineTo(-38, 56); g.fill(); g.fillStyle = '#e8483a'; g.beginPath(); g.arc(-18, -20, 22, 0, 7); g.arc(24, -34, 20, 0, 7); g.fill(); }
       else if (id === 'slice') { g.fillStyle = '#e8483a'; g.beginPath(); g.arc(-14, 6, 40, 0, 7); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 9; g.beginPath(); g.moveTo(-60, -30); g.lineTo(50, 50); g.stroke(); }
       else if (id === 'dodge') { g.fillStyle = '#5a4636'; g.beginPath(); g.arc(-26, -18, 32, 0, 7); g.arc(40, 20, 22, 0, 7); g.fill(); g.fillStyle = '#38e1ff'; g.beginPath(); g.moveTo(0, 6); g.lineTo(18, 50); g.lineTo(-18, 50); g.fill(); }
-      else if (id === 'fight') { g.fillStyle = '#d65db1'; g.beginPath(); g.arc(0, -8, 40, 0, 7); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(-14, -14, 10, 0, 7); g.arc(14, -14, 10, 0, 7); g.fill(); g.fillStyle = '#ffc83d'; g.fillRect(-4, 34, 8, 26); }
+      else if (id === 'fight') { g.fillStyle = '#4fb84f'; g.beginPath(); g.ellipse(0, 10, 46, 40, 0, Math.PI, 0); g.lineTo(46, 40); g.lineTo(-46, 40); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(-16, 10, 11, 0, 7); g.arc(12, 10, 11, 0, 7); g.fill(); g.fillStyle = '#111'; g.beginPath(); g.arc(-18, 12, 5, 0, 7); g.arc(10, 12, 5, 0, 7); g.fill(); g.strokeStyle = '#d9b27a'; g.lineWidth = 7; g.beginPath(); g.moveTo(-70, 56); g.lineTo(-30, 56); g.stroke(); }
       else if (id === 'parkour') { g.fillStyle = '#fff'; g.fillRect(-60, 50, 120, 10); g.beginPath(); g.arc(0, -20, 14, 0, 7); g.fill(); g.fillRect(-4, -6, 8, 30); }
       else { g.fillStyle = '#fff'; g.fillRect(-44, -34, 40, 40); g.fillRect(4, -34, 40, 40); g.fillRect(-44, 14, 40, 40); }
       g.restore();
@@ -139,7 +139,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
   const cartGroup = new THREE.Group(); cartGroup.position.set(0, 0, 1.2); scene.add(cartGroup);
   const carts = CART_IDS.map(id => { const c = makeCart(id); cartGroup.add(c); c.position.set(0, 0, -30); c.scale.setScalar(.01); return c; });
   const byId = Object.fromEntries(carts.map(c => [c.userData.id, c]));
-  const setC = (c, o) => Object.assign(c.userData.ty, {x: 0, y: 0, z: -30, rx: 0, ry: 0, s: .01}, o);
+  const setC = (c, o) => Object.assign(c.userData.ty, {x: 0, y: 0, z: -30, rx: 0, ry: 0, rz: 0, s: .01}, o);
 
   /* ---------- 人物 ---------- */
   const loader = new GLTFLoader();
@@ -263,6 +263,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     customers: {p: [0.2, 1.6, -2.9], l: [0.2, 0.7, 3]},
     focus: {p: [0, 1.5, 0], l: [0, 1.2, 3]},
     cabinet: {p: [-1.8, 1.7, 3.8], l: [-5.0, 1.6, -1.4]},
+    insert: {p: [-3.7, 1.45, 2.4], l: [-5.1, .75, -1.7]},
     desk: {p: [0, 1.5, 4.6], l: [0, 1.0, -1.2]},
     types: {p: [0, 1.55, 5.4], l: [0, 1.2, 0]}
   };
@@ -317,12 +318,12 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     cabinet(m, title) { scrMode = m; bootTitle = title || ''; bootStart = (performance.now() - t0) / 1000; },
     insert(id, cb) {
       insertId = id; prevShot = shot; const c = byId[id]; const cp = new THREE.Vector3(); cab.getWorldPosition(cp);
-      shot = 'cabinet'; scrMode = 'idle';
-      // 卡帶飛到街機前、轉正，再插進去
+      shot = 'insert'; scrMode = 'idle';
+      // 卡帶橫放，從街機前面的投卡槽水平推進去
       const W = p => cartGroup.worldToLocal(cab.localToWorld(p.clone()));
-      const a1 = W(new THREE.Vector3(0, 1.4, 2.0)), a2 = W(cabSlot.clone().add(new THREE.Vector3(0, 0, .02)));
-      setC(c, {x: a1.x, y: a1.y, z: a1.z, s: .5, rx: -.5, ry: .3});
-      setTimeout(() => { c.userData.ty = {x: a2.x, y: a2.y + .2, z: a2.z + .1, rx: 0, ry: .3, s: .3}; }, 700);
+      const a1 = W(cabSlot.clone().add(new THREE.Vector3(0, .15, .9))), a2 = W(cabSlot.clone().add(new THREE.Vector3(0, .15, -.3))), yaw = Math.PI + cab.rotation.y;
+      setC(c, {x: a1.x, y: a1.y, z: a1.z, s: .3, rx: -Math.PI / 2, rz: yaw, ry: 0});
+      setTimeout(() => { c.userData.ty = {x: a2.x, y: a2.y, z: a2.z, rx: -Math.PI / 2, rz: yaw, ry: 0, s: .3}; }, 900);
       const sp = cab.localToWorld(cabSlot.clone()), sc2 = cab.localToWorld(new THREE.Vector3(0, 1.9, .9));
       setTimeout(() => { burst(sp, 0xffc83d, 70, 4); burst(sc2, 0x38e1ff, 40, 3); flash(500); scrMode = 'boot'; bootTitle = META[id] ? META[id].title : id; bootStart = (performance.now() - t0) / 1000; }, 1150);
       setTimeout(cb, 2400);
@@ -341,7 +342,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
       const floaty = (mode === 'types' && !insertId) ? Math.sin(t * 1.4 + i * .9) * .06 : (mode === 'portal' || mode === 'recipe') ? Math.sin(t * 1.6 + i) * .12 : 0;
       const spin = (mode === 'portal' && id === 'catch') ? Math.sin(t * .8) * .6 : (hov ? Math.sin(t * 3) * .14 : 0);
       c.position.x += (ty.x - c.position.x) * .1; c.position.y += (ty.y + (hov ? .35 : 0) + floaty - c.position.y) * .1; c.position.z += (ty.z - c.position.z) * .1;
-      c.rotation.x += (ty.rx - c.rotation.x) * .1; c.rotation.y += ((ty.ry + spin) - c.rotation.y) * .12;
+      c.rotation.z += ((ty.rz || 0) - c.rotation.z) * .1; c.rotation.x += (ty.rx - c.rotation.x) * .1; c.rotation.y += ((ty.ry + spin) - c.rotation.y) * .12;
       c.scale.setScalar(c.scale.x + (ty.s - c.scale.x) * .1);
       c.userData.shine.material.map.offset.set(((t * .5 + i * .3) % 2) - .5 - (hov ? 0 : 0), ((t * .5 + i * .3) % 2) - .5);
     });

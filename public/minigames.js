@@ -232,45 +232,46 @@ export const GAMES = {
     });
   },
 
-  // 打怪：← → 移動，空白鍵發射
+  // 打怪（橫向）：↑ ↓ 移動，空白鍵射箭，史萊姆從右邊走過來
   fight(cv, onEnd) {
-    const s = {x: 240, bullets: [], mons: [], t: 0, life: 3, score: 0, cd: 0, over: false, rec: 0};
+    const s = {y: 190, arrows: [], mons: [], t: 0, life: 3, score: 0, cd: 0, over: false, rec: 0};
+    const LINE = 58; // 營地線
     return frame(cv, (g, k, fx, frozen) => {
       if (!s.over && !frozen) {
         s.t++; if (s.cd > 0) s.cd--; if (s.rec > 0) s.rec--;
-        if (k.ArrowLeft) s.x = Math.max(24, s.x - 6); if (k.ArrowRight) s.x = Math.min(456, s.x + 6);
-        if (k[' '] && s.cd === 0) { s.bullets.push({x: s.x, y: 306}); s.cd = 10; s.rec = 4; sfx('shoot'); }
-        if (s.t % Math.max(22, 40 - Math.floor(s.t / 150)) === 0) s.mons.push({x: rnd(30, 450), y: -20, v: rnd(1.2, 2.2), hp: 2, ph: rnd(0, 6), hit: 0});
-        s.bullets.forEach(b => { b.y -= 9; });
-        s.mons.forEach(m => { m.y += m.v; m.ph += .1; if (m.hit > 0) m.hit--; });
+        if (k.ArrowUp) s.y = Math.max(70, s.y - 5); if (k.ArrowDown) s.y = Math.min(300, s.y + 5);
+        if (k[' '] && s.cd === 0) { s.arrows.push({x: 92, y: s.y - 4}); s.cd = 12; s.rec = 5; sfx('shoot'); }
+        if (s.t % Math.max(24, 44 - Math.floor(s.t / 150)) === 0) s.mons.push({x: W + 20, y: rnd(80, 300), v: rnd(1.1, 2), hp: 2, ph: rnd(0, 6), hit: 0});
+        s.arrows.forEach(b => { b.x += 10; });
+        s.mons.forEach(m => { m.x -= m.v; m.ph += .12; if (m.hit > 0) m.hit--; });
         s.mons = s.mons.filter(m => {
-          for (const b of s.bullets) if (Math.abs(b.x - m.x) < 24 && Math.abs(b.y - m.y) < 24) { b.y = -99; m.hp--; m.hit = 4; fx.burst(m.x, m.y + 10, '#ffe27a', 6, 4); sfx('hit'); if (m.hp <= 0) { s.score++; fx.burst(m.x, m.y, '#d65db1', 20, 7); fx.burst(m.x, m.y, '#fff', 8, 5); fx.pop(m.x, m.y - 24, '+1', '#fff'); sfx('good'); return false; } }
-          if (m.y > 322) { s.life--; fx.shake(9); fx.flash('#ff3a3a'); fx.pop(m.x, 310, '-1 ♥', '#ff6a6a'); fx.burst(m.x, 330, '#ff6a6a', 16, 6); sfx('boom'); return false; }
+          for (const b of s.arrows) if (Math.abs(b.x - m.x) < 26 && Math.abs(b.y - m.y) < 24) { b.x = 999; m.hp--; m.hit = 4; fx.burst(m.x, m.y, '#ffe27a', 6, 4); sfx('hit'); if (m.hp <= 0) { s.score++; fx.burst(m.x, m.y, '#7ad84a', 20, 7); fx.burst(m.x, m.y, '#fff', 8, 5); fx.pop(m.x, m.y - 24, '+1', '#fff'); sfx('good'); return false; } }
+          if (m.x < LINE) { s.life--; fx.shake(9); fx.flash('#ff3a3a'); fx.pop(LINE + 20, m.y, '-1 ♥', '#ff6a6a'); fx.burst(LINE, m.y, '#ff6a6a', 16, 6); sfx('boom'); return false; }
           return true;
         });
-        s.bullets = s.bullets.filter(b => b.y > -10);
+        s.arrows = s.arrows.filter(b => b.x < W + 20);
       }
-      const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#150c35'); bg.addColorStop(1, '#3a1d63'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-      for (let i = 0; i < 50; i++) { g.fillStyle = `rgba(255,255,255,${.2 + (i % 3) * .2})`; g.fillRect((i * 83) % W, (i * 47 + s.t * (1 + i % 3)) % H, 2, 2); }
-      g.strokeStyle = '#ff4d5e88'; g.lineWidth = 2; g.setLineDash([10, 8]); g.beginPath(); g.moveTo(0, 336); g.lineTo(W, 336); g.stroke(); g.setLineDash([]);
-      g.fillStyle = '#ff4d5e88'; g.font = `700 12px ${FONT}`; g.textAlign = 'left'; g.fillText('基地線', 6, 352);
+      const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0d2a2a'); bg.addColorStop(.6, '#1c4a3a'); bg.addColorStop(1, '#2d5a2a'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+      g.fillStyle = '#ffe9a8'; g.beginPath(); g.arc(400, 56, 22, 0, 7); g.fill();
+      for (let i = 0; i < 7; i++) { const x = ((i * 130 - s.t * (1 + i % 2)) % (W + 130) + W + 130) % (W + 130) - 40, h = 90 + (i * 37) % 60; g.fillStyle = i % 2 ? '#14382f' : '#0f2d28'; g.beginPath(); g.moveTo(x - 30, 330); g.lineTo(x, 330 - h); g.lineTo(x + 30, 330); g.fill(); }
+      g.fillStyle = '#3d6a2e'; g.fillRect(0, 330, W, 30); g.fillStyle = '#2a4d20'; for (let i = 0; i < 12; i++) g.fillRect(((i * 53 - s.t * 2) % W + W) % W, 336 + (i % 3) * 8, 18, 3);
+      g.strokeStyle = '#ffd23a99'; g.lineWidth = 2; g.setLineDash([10, 8]); g.beginPath(); g.moveTo(LINE, 40); g.lineTo(LINE, 330); g.stroke(); g.setLineDash([]);
+      g.fillStyle = '#ffd23aaa'; g.font = `700 12px ${FONT}`; g.textAlign = 'left'; g.fillText('營地線', 6, 352);
       s.mons.forEach(m => {
-        const w = Math.sin(m.ph) * 3;
-        g.fillStyle = m.hit ? '#fff' : m.hp > 1 ? '#9b59d0' : '#e06ac0';
-        g.beginPath(); g.ellipse(m.x, m.y, 22 + w, 20 - w, 0, 0, 7); g.fill();
-        g.strokeStyle = g.fillStyle; g.lineWidth = 3; g.beginPath(); g.moveTo(m.x - 8, m.y - 18); g.lineTo(m.x - 12, m.y - 30); g.moveTo(m.x + 8, m.y - 18); g.lineTo(m.x + 12, m.y - 30); g.stroke();
-        g.fillStyle = '#ffd23a'; g.beginPath(); g.arc(m.x - 12, m.y - 30, 3, 0, 7); g.arc(m.x + 12, m.y - 30, 3, 0, 7); g.fill();
-        const ex = Math.max(-2, Math.min(2, (s.x - m.x) / 60));
-        g.fillStyle = '#fff'; g.beginPath(); g.arc(m.x - 8, m.y - 3, 6, 0, 7); g.arc(m.x + 8, m.y - 3, 6, 0, 7); g.fill(); g.fillStyle = '#111'; g.beginPath(); g.arc(m.x - 8 + ex, m.y - 2, 3, 0, 7); g.arc(m.x + 8 + ex, m.y - 2, 3, 0, 7); g.fill();
-        g.strokeStyle = '#111'; g.lineWidth = 2; g.beginPath(); g.arc(m.x, m.y + 8, 6, .1, 3.04); g.stroke();
+        const sq = Math.sin(m.ph) * 3;
+        g.fillStyle = m.hit ? '#fff' : m.hp > 1 ? '#4fb84f' : '#8fe06a';
+        g.beginPath(); g.ellipse(m.x, m.y + 4 - sq, 24 + sq, 20 - sq, 0, Math.PI, 0); g.lineTo(m.x + 24 + sq, m.y + 22); g.lineTo(m.x - 24 - sq, m.y + 22); g.fill();
+        g.fillStyle = '#fff'; g.beginPath(); g.arc(m.x - 9, m.y + 2, 6, 0, 7); g.arc(m.x + 5, m.y + 2, 6, 0, 7); g.fill(); g.fillStyle = '#111'; g.beginPath(); g.arc(m.x - 11, m.y + 3, 3, 0, 7); g.arc(m.x + 3, m.y + 3, 3, 0, 7); g.fill();
+        g.strokeStyle = '#111'; g.lineWidth = 2; g.beginPath(); g.arc(m.x - 4, m.y + 12, 5, .1, 3.04); g.stroke();
       });
-      s.bullets.forEach(b => { g.fillStyle = '#ffe27a55'; rr(g, b.x - 5, b.y - 12, 10, 24, 5); g.fill(); g.fillStyle = '#ffc83d'; rr(g, b.x - 2.5, b.y - 9, 5, 18, 3); g.fill(); });
-      g.save(); g.translate(s.x, 322 + s.rec);
-      g.fillStyle = s.t % 4 < 2 ? '#ffb02a' : '#ff6a2a'; g.beginPath(); g.moveTo(-6, 14); g.lineTo(0, 24 + (s.t % 3) * 3); g.lineTo(6, 14); g.fill();
-      g.fillStyle = '#2f7fb8'; g.beginPath(); g.moveTo(-24, 16); g.lineTo(-9, -4); g.lineTo(-9, 16); g.fill(); g.beginPath(); g.moveTo(24, 16); g.lineTo(9, -4); g.lineTo(9, 16); g.fill();
-      g.fillStyle = '#38e1ff'; g.beginPath(); g.moveTo(0, -20); g.lineTo(12, 16); g.lineTo(-12, 16); g.fill(); g.fillStyle = '#e8fbff'; g.beginPath(); g.ellipse(0, 2, 3.5, 7, 0, 0, 7); g.fill(); g.restore();
+      s.arrows.forEach(b => { g.strokeStyle = '#d9b27a'; g.lineWidth = 3; g.beginPath(); g.moveTo(b.x - 18, b.y); g.lineTo(b.x + 10, b.y); g.stroke(); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(b.x + 10, b.y - 5); g.lineTo(b.x + 20, b.y); g.lineTo(b.x + 10, b.y + 5); g.fill(); });
+      g.save(); g.translate(76 - s.rec, s.y);
+      g.fillStyle = '#e8883a'; rr(g, -14, -6, 28, 30, 8); g.fill(); g.fillStyle = '#f5d2a8'; g.beginPath(); g.arc(0, -16, 13, 0, 7); g.fill();
+      g.fillStyle = '#2f7fb8'; g.beginPath(); g.moveTo(-15, -18); g.lineTo(0, -34); g.lineTo(15, -18); g.fill(); g.fillStyle = '#111'; g.beginPath(); g.arc(5, -16, 2.5, 0, 7); g.fill();
+      g.strokeStyle = '#8a5a2a'; g.lineWidth = 4; g.beginPath(); g.arc(16, 4, 20, -1.2, 1.2); g.stroke(); g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(16 + 20 * Math.cos(-1.2), 4 + 20 * Math.sin(-1.2)); g.lineTo(16 - s.rec, 4); g.lineTo(16 + 20 * Math.cos(1.2), 4 + 20 * Math.sin(1.2)); g.stroke();
+      g.restore();
       hearts(g, s.life); score(g, '擊倒', s.score);
-      if (!s.over && s.life <= 0) { s.over = true; finish(g, fx, '基地被攻破', `擊倒 ${s.score} 隻`, starsOf(s.score, 12, 5), onEnd); }
+      if (!s.over && s.life <= 0) { s.over = true; finish(g, fx, '營地被攻破', `擊倒 ${s.score} 隻`, starsOf(s.score, 12, 5), onEnd); }
     });
   }
 };
@@ -279,5 +280,5 @@ export const META = {
   catch: {title: '接東西', color: '#e8483a', tip: '← → 移動籃子。接蘋果得分，躲開炸彈，三條命。', recipe: {player: '用鍵盤左右移動的籃子', things: '掉下來的蘋果和炸彈', rule: '接到蘋果加分、碰到炸彈或漏接少一條命', end: '三條命用完就結束'}, blocks: ['按下 ← → 鍵', 'x 改變', '建立分身', '變數：分數、生命']},
   slice: {title: '切水果', color: '#3fb87a', tip: '滑鼠劃過水果就切開。連續切會有加分，別碰炸彈！', recipe: {player: '滑鼠的刀光', things: '飛起來又掉下去的水果和炸彈', rule: '劃過水果加分、劃到炸彈或漏掉水果少一次機會', end: '機會用完就結束'}, blocks: ['滑鼠的 x、y 座標', '碰到 滑鼠指標？', '隨機選一個數', '重力：y 速度一直減少']},
   dodge: {title: '躲隕石', color: '#3b7fe0', tip: '方向鍵移動小飛船，躲開掉下來的隕石，越久越難。', recipe: {player: '用方向鍵控制的飛船', things: '越來越多、越來越快的隕石', rule: '被撞到少一條命，撐越久越好', end: '三條命用完就結束'}, blocks: ['上下左右四個方向鍵', '碰到 隕石？', '等待多久才再來一顆', '計時器：撐了幾秒']},
-  fight: {title: '打怪', color: '#9b59d0', tip: '← → 移動，空白鍵發射。怪物走到底部會少一條命。', recipe: {player: '會發射子彈的飛船', things: '一直往下走的怪物（要打兩下）', rule: '子彈打中怪物扣血、打倒得分、怪物走到底少一條命', end: '三條命用完就結束'}, blocks: ['按下 空白鍵', '建立 子彈 的分身', '廣播與接收廣播', '怪物的血量變數']}
+  fight: {title: '打怪', color: '#3fa05a', tip: '↑ ↓ 移動弓箭手，空白鍵射箭。史萊姆衝過營地線會少一條命。', recipe: {player: '會射箭的弓箭手（上下移動）', things: '從右邊走過來的史萊姆（要射兩箭）', rule: '箭射中史萊姆扣血、打倒得分、衝過營地線少一條命', end: '三條命用完就結束'}, blocks: ['按下 ↑ ↓ 鍵', '建立 箭 的分身', '碰到 史萊姆？', '史萊姆的血量變數']}
 };

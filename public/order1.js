@@ -107,10 +107,11 @@ async function stepOrder(tk) {
     B('這裡專門幫客人「訂做遊戲」。客人想要什麼，我們就做什麼。'),
     B('我是老闆，負責接單。你是我的新設計師，要幫我把遊戲做出來。'),
     B('你看，那邊那台街機。', {do: () => view && view.shot('cabinet')}),
+    B('它現在沒有新遊戲可以放，客人玩膩了，工作室才會這麼冷清。', {do: () => view && view.shot('cabinet')}),
     B('客人訂的遊戲做好了，就會插在那台機器上，讓客人親自玩玩看。', {do: () => view && view.shot('cabinet')}),
     B('所以每一張訂單，都是要做出一個「真的能玩」的遊戲。', {do: () => { view && view.shot('openBoss'); }}),
-    B('接案的流程很簡單：接單、問清楚、拆成工作單、動手做、交貨。', {do: bossDo('Interact')}),
-    B('咦，門口有人來了。你站到櫃台後面，我們一起接這張單。')], tk);
+    B('接案的流程很簡單：接單、問清楚、拆成工作單、動手做、交貨。', {img: 'flow', do: bossDo('Interact')}),
+    B('咦，門口有人來了。你站到櫃台後面，我們一起接這張單。', {img: ''})], tk);
   if (rpg.dead(tk)) return;
   if (view) {
     const bo = view.actors.boss; bo.goto(2.8, -0.5, null, () => bo.goto(1.6, -2.3, -.2)); view.shot('customers'); await wait(3800); view.props(false);

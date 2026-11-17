@@ -30,14 +30,13 @@ export const SKETCH = {
 <g stroke="#ff9a3a" stroke-width="3" opacity=".8"><path d="M80 10 v-8 M70 14 l-4 -8"/><path d="M185 6 v-6"/><path d="M265 60 v-10 M274 62 l4 -8"/></g>
 <path d="M155 150 l-14 40 h28 z" stroke="#7fe0ff"/><circle cx="155" cy="172" r="5" stroke="#7fe0ff" stroke-width="3"/><path d="M147 192 l-5 14 M163 192 l5 14" stroke="#ff9a3a" stroke-width="4"/>
 <path d="M120 120 q10 -10 22 -4" stroke="#ff7a8a" stroke-width="3"/><path d="M175 120 q10 -10 22 -4" stroke="#ff7a8a" stroke-width="3"/><text x="110" y="226" fill="#ffe27a" stroke="none" font-size="22" font-family="cursive">GO!!</text>`, -1),
-  // 打怪：英雄射子彈，怪物有角有牙
+  // 打怪（橫向）：弓箭手在左邊射箭，史萊姆從右邊走過來
   fight: W(`
-<circle cx="64" cy="120" r="14" stroke="#2f7fb8"/><path d="M64 134 v34 M64 146 l-20 -8 M64 146 l26 -10 M64 168 l-14 28 M64 168 l14 28" stroke="#2f7fb8"/>
-<path d="M88 134 l18 -6" stroke="#555" stroke-width="5"/>
-<g stroke="#f5b400" stroke-width="5"><path d="M130 124 h10"/><path d="M158 124 h10"/><path d="M186 124 h10"/></g>
-<path d="M222 70 q34 -30 70 0 q22 50 -8 82 q-30 18 -58 0 q-28 -34 -4 -82z" stroke="#7a3ac8" fill="#c9a8ff" fill-opacity=".4"/>
-<path d="M232 66 l-8 -24 l20 14 M282 66 l8 -24 l-20 14" stroke="#7a3ac8"/><circle cx="244" cy="100" r="6" stroke="#222" stroke-width="3"/><circle cx="272" cy="100" r="6" stroke="#222" stroke-width="3"/>
-<path d="M240 128 l8 14 l8 -14 l8 14 l8 -14 l8 14" stroke="#e8483a" stroke-width="3.4"/>
-<g stroke="#e8483a" stroke-width="3"><path d="M30 40 q-10 -12 0 -16 q10 -4 10 8 q10 -8 14 4 q0 10 -12 20z"/><path d="M70 40 q-10 -12 0 -16 q10 -4 10 8 q10 -8 14 4 q0 10 -12 20z"/></g>
-<path d="M255 30 l4 8 l9 1 l-7 6 l2 9 l-8 -4 l-8 4 l2 -9 l-7 -6 l9 -1z" stroke="#f5b400" stroke-width="2.6"/>`, 1)
+<path d="M0 190 h320" stroke="#3d7a3a" stroke-width="4"/><path d="M20 190 l22 -60 l22 60 M250 190 l18 -50 l18 50" stroke="#2f7a52"/>
+<circle cx="62" cy="108" r="13" stroke="#e8883a"/><path d="M50 98 l12 -16 l12 16" stroke="#2f7fb8"/><path d="M62 121 v30 M62 150 l-10 24 M62 150 l12 24 M62 132 l22 -6" stroke="#e8883a"/>
+<path d="M96 100 q22 26 0 52" stroke="#8a5a2a" stroke-width="4"/><path d="M96 100 l-4 26 l4 26" stroke="#555" stroke-width="2"/>
+<g stroke="#f5b400" stroke-width="4"><path d="M120 126 h28 M150 126 l-7 -5 M150 126 l-7 5"/><path d="M164 126 h20"/></g>
+<path d="M214 190 q-4 -50 36 -54 q40 4 36 54 z" stroke="#2f9a3a" fill="#8fe06a" fill-opacity=".5"/>
+<circle cx="236" cy="168" r="6" stroke="#222" stroke-width="3"/><circle cx="262" cy="168" r="6" stroke="#222" stroke-width="3"/><path d="M240 182 q8 6 16 0" stroke="#222" stroke-width="3"/>
+<path d="M285 40 l4 8 l9 1 l-7 6 l2 9 l-8 -4 l-8 4 l2 -9 l-7 -6 l9 -1z" stroke="#f5b400" stroke-width="2.6"/>`, 1)
 };
