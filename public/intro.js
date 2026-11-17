@@ -85,7 +85,7 @@ function done(i) { S.done[i] = true; save(); }
 function go(i) {
   token++; closeGame(); stopX && stopX(); hideDlg();
   S.step = i; save(); sfx('whoosh');
-  const c = $('#card'); c.replaceChildren(); c.classList.remove('in');
+  const c = $('#card'); c.replaceChildren(); c.classList.remove('in', 'wide');
   [stepFall, stepWhy, stepXray, stepWhat, stepCustomers, stepRecipe, stepBug, stepGo][i](token);
 }
 function panel(...kids) { const c = $('#card'); c.replaceChildren(...kids); c.classList.remove('in'); void c.offsetWidth; c.classList.add('in'); }
@@ -261,33 +261,51 @@ async function stepCustomers(tk) {
 /* ---------- 步驟 6：訂單規格卡 ---------- */
 async function stepRecipe(tk) {
   stage('pair');
-  await talk([B('客人的需求常常講得亂七八糟。'), B('所以工作室有個規矩：接單之前，先整理成一張「規格卡」。'), B('你以後做自己的遊戲，也要先畫一張。看看下面四張，再來小測驗！')], tk);
+  await talk([B('客人的需求常常講得亂七八糟。'), B('所以接單之前，先整理成一張「規格卡」。'),
+    B('我把四位客人的需求，一位一位交給你。'), B('你照清單，一項一項幫我檢查：玩家、場上的東西、規則、勝負，還有要用哪組積木。'),
+    B('每一項都選對，這張單才算整理好！')], tk);
   if (dead(tk)) return;
-  const ids = Object.keys(META);
-  const Q = [
-    ['想讓「滑鼠劃過就切開」，要用到滑鼠的 x、y 座標。這最像哪一款？', 'slice'],
-    ['「按下空白鍵就射出一支箭」，這最像哪一款？', 'fight'],
-    ['用計時器算出「撐了幾秒」當分數，這最像哪一款？', 'dodge'],
-    ['左右鍵移動籃子，再用「分身」做出一直掉下來的東西，這最像哪一款？', 'catch']
-  ];
-  let ok = 0;
-  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = async () => { await talk([B('規格卡難不倒你！'), B('最後一堂課：認識工作室最頭痛的傢伙。')], tk); if (dead(tk)) return; done(5); S.quiz = true; save(); go(6); };
-  panel(h('h2', {}, '訂單規格卡'),
-    ...ids.map(id => { const m = META[id]; return h('div', {class: 'recipe', style: `border-color:${m.color}`}, h('h3', {style: `color:${m.color}`}, m.title),
-      h('div', {}, `玩家：${m.recipe.player}`), h('div', {}, `場上的東西：${m.recipe.things}`), h('div', {}, `規則：${m.recipe.rule}`), h('div', {}, `勝負：${m.recipe.end}`),
-      h('div', {class: 'chips'}, m.blocks.map(b => h('span', {class: 'chip'}, '🧩 ' + b)))); }),
-    h('h3', {}, '小測驗：這些積木，分別是哪一款要用的？'),
-    ...Q.map(([q, a]) => {
-      const row = h('div', {class: 'item'}, h('div', {class: 't'}, q));
-      ids.forEach(id => row.append(h('button', {onclick: () => {
-        if (row.classList.contains('right')) return;
-        if (id === a) { row.className = 'item right'; row.querySelectorAll('button').forEach(b => { b.disabled = true; }); row.append(h('b', {style: 'color:#1f6a43'}, '✓ ' + META[id].title)); sfx('right'); if (++ok === Q.length) { nb.disabled = false; cheer(); toast('規格卡難不倒你！'); } }
-        else { row.classList.add('wrong'); sfx('wrong'); setTimeout(() => row.classList.remove('wrong'), 500); }
-      }}, META[id].title)));
-      return row;
-    }),
-    nav(() => go(4), nb));
-  if (S.quiz) nb.disabled = false;
+  const ids = Object.keys(CUSTOMERS), cap = $('#card');
+  const FIELDS = [['player', '玩家是誰？', '玩家'], ['things', '場上有什麼東西？', '場上的東西'], ['rule', '規則是什麼？', '規則'], ['end', '怎麼分出勝負？', '勝負'], ['blocks', '最需要哪一組積木？', '主要積木']];
+  const val = (g, f) => f === 'blocks' ? META[g].blocks.slice(0, 2).join('、') : META[g].recipe[f];
+  const mix = a => a.map(x => [Math.random(), x]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+  const doneC = {};
+  const nb = h('button', {class: 'btn', disabled: ''}, '下一步');
+  nb.onclick = async () => { await talk([B('規格卡難不倒你！'), B('最後一堂課：認識工作室最頭痛的傢伙。')], tk); if (dead(tk)) return; done(5); S.quiz = true; save(); go(6); };
+  const finishAll = () => { nb.disabled = false; cheer(); toast('四張規格卡都整理好了！'); };
+  const show = ci => {
+    cap.classList.add('wide');
+    const k = ids[ci], c = CUSTOMERS[k], g = c.game, m = META[g];
+    const filled = {}; let fi = 0;
+    const lines = FIELDS.map(([f, , lab]) => h('li', {class: ''}, '☐ ' + lab + '：', h('b', {}, '？？？')));
+    const qbox = h('div', {class: 'rqbox'});
+    const tabs = h('div', {class: 'rtabs'}, ids.map((id, i) => h('button', {class: 'rtab' + (i === ci ? ' on' : '') + (doneC[id] ? ' ok' : ''), onclick: () => { if (i !== ci) { sfx('whoosh'); show(i); } }}, (doneC[id] ? '✓ ' : '') + CUSTOMERS[id].job)));
+    const ask = () => {
+      if (fi >= FIELDS.length) {
+        doneC[k] = true; sfx('combo'); qbox.replaceChildren(h('div', {class: 'rdone'}, `✓ ${c.job}的規格卡整理好了！`),
+          ids.every(i => doneC[i]) ? h('div', {}, '四張都完成了，按「下一步」！') : h('button', {class: 'btn', onclick: () => show(ids.findIndex(i => !doneC[i]))}, '下一位客人 →'));
+        tabs.querySelectorAll('.rtab')[ci].className = 'rtab on ok'; tabs.querySelectorAll('.rtab')[ci].textContent = '✓ ' + c.job;
+        boss() && boss().once('Cheer');
+        if (ids.every(i => doneC[i])) finishAll();
+        return;
+      }
+      const [f, q] = FIELDS[fi], right = val(g, f);
+      const others = mix([...new Set(Object.values(CUSTOMERS).filter(o => o.game !== g).map(o => val(o.game, f)))]).slice(0, 2);
+      qbox.replaceChildren(h('div', {class: 'rq'}, `第 ${fi + 1} 項：${q}`),
+        ...mix([right, ...others]).map(o => h('button', {class: 'ropt', onclick: e => {
+          if (o === right) { sfx('right'); lines[fi].className = 'got'; lines[fi].replaceChildren('☑ ' + FIELDS[fi][2] + '：', h('b', {}, right)); fi++; ask(); }
+          else { sfx('wrong'); e.target.classList.add('bad'); setTimeout(() => e.target.classList.remove('bad'), 600); toast('再想想：客人說的是「' + c.say.replace(/[「」]/g, '') + '」'); }
+        }}, o)));
+    };
+    ask();
+    panel(h('div', {class: 'rform'},
+      h('div', {class: 'rl'}, h('div', {class: 'bname', style: 'border-color:#5b4fd0'}, c.job, h('span', {}, '的需求')), h('div', {class: 'bimg', html: SKETCH[g]}), h('p', {class: 'bsay'}, c.say)),
+      h('div', {class: 'rr'}, h('h3', {}, `📋 ${c.job}的規格卡`), h('ul', {class: 'rlist'}, lines), qbox)),
+      tabs, nav(() => { cap.classList.remove('wide'); go(4); }, nb));
+    cap.classList.add('wide');
+    if (S.quiz) { nb.disabled = false; ids.forEach(i => { doneC[i] = true; }); }
+  };
+  show(0);
 }
 
 /* ---------- 步驟 7：Bug 怪與麻煩事件 ---------- */

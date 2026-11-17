@@ -132,3 +132,18 @@ body.flat #gl{display:none}body.flat{overflow:auto}
 #card:empty{display:none}
 #brief:empty{display:none}
 #brief{width:min(1040px,calc(100vw - 40px));grid-template-columns:1.25fr 1fr;min-height:auto}
+
+/* 規格卡：逐項檢核 */
+#card.wide{width:min(1040px,calc(100vw - 24px));max-height:66vh}
+.rform{display:grid;grid-template-columns:1fr 1.2fr;gap:18px;align-items:start}
+.rl .bimg{margin:8px 0}.rl .bsay{margin:0;font-size:17px;line-height:1.7;background:#fff3c6;border-radius:10px;padding:10px 12px;color:#5a3a10}
+.rr h3{margin:0 0 6px;font-size:20px}
+.rlist{list-style:none;margin:0 0 8px;padding:0}.rlist li{font-size:16px;line-height:1.9;color:#7a7a90;border-bottom:1px dashed #e0d9f5}.rlist li.got{color:#1f6a43}.rlist li b{margin-left:4px}
+.rqbox{background:#f6f3ff;border:2px solid #cfc9f0;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.rq{font-weight:800;font-size:17px}
+.ropt{text-align:left;border:2px solid var(--ink);background:#fff;border-radius:12px;padding:8px 12px;font-size:15px;line-height:1.5;cursor:pointer;font-family:inherit;font-weight:700}.ropt:hover{background:var(--gold)}.ropt.bad{background:#fdecea;border-color:var(--red);animation:shake .3s}
+.rdone{font-weight:800;color:#1f6a43;font-size:18px}
+.rtabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}.rtab{border:2px solid #cfc9f0;background:#fff;border-radius:16px;padding:4px 12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}.rtab.on{border-color:#5b4fd0;background:#ece8ff}.rtab.ok{border-color:#2f8f5b;color:#1f6a43}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media(max-width:900px){.rform{grid-template-columns:1fr}}
+.rl .bimg{max-width:250px}.rform{grid-template-columns:.8fr 1.4fr}#card.wide{max-height:72vh}
