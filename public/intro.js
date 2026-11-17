@@ -336,9 +336,9 @@ async function stepBug(tk) {
   };
   if (view) { stage('desk'); }
   if (!S.caught) {
-    await talk([B('最後一件事！'), B('工作室有個頭痛人物，叫做 Bug 怪。'), B('程式只要有一點點錯，他就跑出來搗亂。'), B('快看，他來了！點一下桌上亂跑的那隻，把他抓起來！')], tk);
+    await talk([B('最後一件事，也是最重要的一件。'), B('遊戲交給客人之前，一定要先抓 Bug。'), B('要是客人拿到會當機、會亂跳分數的遊戲，馬上就會來客訴。', {img: 'bug'}), B('客訴多了，工作室的招牌就垮了，不會再有人上門。', {img: ''}), B('所以每次交貨前，都要把工作室的頭痛人物抓出來，那就是 Bug 怪。'), B('程式只要有一點點錯，他就跑出來搗亂。快看，他來了！'), B('點一下桌上亂跑的那隻，把他抓起來！')], tk);
     if (dead(tk)) return;
-    if (view) { view.bug(true); view.pickCb(async p => { if (p.kind === 'bug') { view.bugCaught(); view.pickCb(null); S.caught = true; save(); sfx('combo'); view.actors.boss && view.actors.boss.once('Cheer'); render(); await talk([B('抓到了！太棒了！'), B('不過 Bug 怪只是在提醒你，哪裡寫錯了。'), B('除錯三步驟：看症狀、猜是哪一段積木、改了再試一次。', {img: 'bug'}), B('來，幫試玩員找找這幾隻 Bug 在哪裡！', {img: ''})], tk); } }); } else S.caught = true;
+    if (view) { view.bug(true); view.pickCb(async p => { if (p.kind === 'bug') { view.bugCaught(); view.pickCb(null); S.caught = true; save(); sfx('combo'); view.actors.boss && view.actors.boss.once('Cheer'); render(); await talk([B('抓到了！太棒了！'), B('不過 Bug 怪只是在提醒你，哪裡寫錯了。'), B('抓 Bug 有三步驟：看症狀、猜是哪一段積木、改了再試一次。', {img: 'bug'}), B('來，先練習幫試玩員找找這幾隻 Bug，以後交貨前就靠你檢查了！', {img: ''})], tk); } }); } else S.caught = true;
   } else { view && view.bug(false); }
   render();
   if (Object.keys(S.bugs).length === SC.length) nb.disabled = false;
@@ -348,7 +348,7 @@ async function stepBug(tk) {
 /* ---------- 步驟 8：接單出發 ---------- */
 async function stepGo(tk) {
   if (view) { stage('boss'); view.layout('go'); view.addActor('mei', -4.5, 1.0, {face: 0}).then(a => { a.g.visible = true; a.goto(-2.0, 0.2, .3); }); }
-  await talk([B(`${nm()}，你已經知道遊戲是什麼、客人想要什麼、Bug 怪怎麼對付了。`), B('第一張訂單來了！'), {w: '水果攤老闆娘', t: '拜託你了！我的第一張訂單：接水果！'}, B('把卡帶插進舊街機，把它做出來吧！')], tk);
+  await talk([B(`${nm()}，你已經知道遊戲是什麼、客人想要什麼，交貨前要先抓 Bug 避免客訴。`), B('第一張訂單來了！'), {w: '水果攤老闆娘', t: '拜託你了！我的第一張訂單：接水果！'}, B('把卡帶插進舊街機，把它做出來吧！')], tk);
   if (dead(tk)) return;
   panel(h('h2', {}, `${nm()}，第一張訂單：接水果`), h('div', {class: 'lead'}, '準備好就插入卡帶，進到編輯器開始做。'),
     nav(() => go(6), h('button', {class: 'btn', onclick: () => { done(7); withInsert('catch', () => setTimeout(() => { location.href = '/order1.html'; }, 400)); }}, '接下訂單，插入卡帶')));
