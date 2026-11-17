@@ -90,7 +90,7 @@ function go(i) {
 }
 function panel(...kids) { const c = $('#card'); c.replaceChildren(...kids); c.classList.remove('in'); void c.offsetWidth; c.classList.add('in'); }
 const nav = (back, next) => h('div', {class: 'row'}, back ? h('button', {class: 'btn sec', onclick: back}, '上一步') : h('span'), next);
-const stage = shot => { if (!view) return; view.enterRoom(); view.props(true); view.layout('none'); (view.actors.boss || view.addActor('boss', 0, -1.8, {face: .5})); view.shot(shot || 'boss'); };
+const stage = shot => { if (!view) return; Object.keys(CUSTOMERS).forEach(k => { const o = view.actors[k]; if (o) o.g.visible = false; }); view.enterRoom(); view.props(true); view.layout('none'); (view.actors.boss || view.addActor('boss', 0, -1.8, {face: .5})); view.shot(shot || 'boss'); };
 
 /* ---------- 步驟 1：掉進去 ---------- */
 async function stepFall(tk) {
@@ -237,7 +237,7 @@ async function stepCustomers(tk) {
   if (dead(tk)) return;
   if (view) {
     view.shot('customers');
-    ids.forEach((k, i) => { const c = CUSTOMERS[k]; view.addActor(k, (i - 1.5) * 1.0, 5.0, {face: Math.PI}).then(a => { a.speed = 2.8; setTimeout(() => a.goto(c.x, c.z, Math.PI), 500 + i * 700); }); });
+    ids.forEach((k, i) => { const c = CUSTOMERS[k]; view.addActor(k, (i - 1.5) * 1.0, 5.0, {face: Math.PI}).then(a => { a.g.visible = true; a.speed = 2.8; setTimeout(() => a.goto(c.x, c.z, Math.PI), 500 + i * 700); }); });
     await wait(4200);
   }
   await talk([B('客人上門了！'), B('每個人想要的遊戲都不一樣，點一位來聽聽他的需求。'), B('四款樣品都試玩過，才能繼續。')], tk);
@@ -328,7 +328,7 @@ async function stepBug(tk) {
 
 /* ---------- 步驟 8：接單出發 ---------- */
 async function stepGo(tk) {
-  if (view) { stage('boss'); view.layout('go'); view.addActor('mei', -4.5, 1.0, {face: 0}).then(a => { a.goto(-2.0, 0.2, .3); }); }
+  if (view) { stage('boss'); view.layout('go'); view.addActor('mei', -4.5, 1.0, {face: 0}).then(a => { a.g.visible = true; a.goto(-2.0, 0.2, .3); }); }
   await talk([B(`${nm()}，你已經知道遊戲是什麼、客人想要什麼、Bug 怪怎麼對付了。`), B('第一張訂單來了！'), {w: '水果攤老闆娘', t: '拜託你了！我的第一張訂單：接水果！'}, B('把卡帶插進舊街機，把它做出來吧！')], tk);
   if (dead(tk)) return;
   panel(h('h2', {}, `${nm()}，第一張訂單：接水果`), h('div', {class: 'lead'}, '準備好就插入卡帶，進到編輯器開始做。'),
