@@ -2,6 +2,7 @@
 import {GAMES, META, sfx, setMuted, isMuted} from '/minigames.js';
 import {SKETCH} from '/sketches.js';
 import {showPic, hidePic} from '/pics.js';
+import {startDemo} from '/bugdemo.js';
 
 const $ = s => document.querySelector(s);
 function h(tag, attrs, ...kids) {
@@ -311,28 +312,36 @@ async function stepRecipe(tk) {
 /* ---------- 步驟 7：Bug 怪與麻煩事件 ---------- */
 async function stepBug(tk) {
   const SC = [
-    ['試玩員回報：「籃子會飛出畫面外！」', ['把籃子刪掉', '找到控制 x 座標的積木，加上最左和最右的限制', '叫玩家不要往右邊走'], 1, '找出控制位置的積木，加上限制，這就是除錯。'],
-    ['試玩員回報：「我接到蘋果，分數怎麼不會加？」', ['檢查「碰到籃子」那一段，有沒有「分數加 1」的積木', '把分數改成固定 100', '重新開機'], 0, '分數不動，先檢查「碰到」那一段有沒有改變分數的積木。'],
-    ['試玩員回報：「蘋果掉到地板還一直留在畫面上，越堆越多！」', ['讓蘋果掉慢一點', '在「碰到地板」時，加上「刪除這個分身」的積木', '把地板顏色換掉'], 1, '分身用完要刪掉，不然會越積越多，遊戲就會越來越卡。'],
-    ['試玩員回報：「炸彈碰到籃子，生命卻沒有減少！」', ['把炸彈改成蘋果', '把生命一開始改成 100', '檢查炸彈「碰到籃子」那一段，有沒有「生命 −1」的積木'], 2, '先看症狀，再找到負責那件事的積木，通常就是少了一塊或放錯地方。']
+    ['fly', '試玩員回報：「籃子會飛出畫面外！」', ['把籃子刪掉', '找到控制 x 座標的積木，加上最左和最右的限制', '叫玩家不要往右邊走'], 1, '找出控制位置的積木，加上限制，這就是除錯。'],
+    ['score', '試玩員回報：「我接到蘋果，分數怎麼不會加？」', ['檢查「碰到籃子」那一段，有沒有「分數加 1」的積木', '把分數改成固定 100', '重新開機'], 0, '分數不動，先檢查「碰到」那一段有沒有改變分數的積木。'],
+    ['pile', '試玩員回報：「蘋果掉到地板還一直留在畫面上，越堆越多！」', ['讓蘋果掉慢一點', '在「碰到地板」時，加上「刪除這個分身」的積木', '把地板顏色換掉'], 1, '分身用完要刪掉，不然會越積越多，遊戲就會越來越卡。'],
+    ['bomb', '試玩員回報：「炸彈碰到籃子，生命卻沒有減少！」', ['把炸彈改成蘋果', '把生命一開始改成 100', '檢查炸彈「碰到籃子」那一段，有沒有「生命 −1」的積木'], 2, '先看症狀，再找到負責那件事的積木，通常就是少了一塊或放錯地方。']
   ];
   const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = () => { done(6); go(7); };
   const body = h('div', {});
+  let stopDemo = null; stopX = () => { stopDemo && stopDemo(); stopDemo = null; };
   const render = () => {
-    body.replaceChildren();
+    stopX(); body.replaceChildren();
     if (!S.caught) { body.append(h('div', {class: 'lead'}, '🐛 桌上有一隻亂跑的 Bug 怪，點他把他抓起來！')); return; }
-    body.append(h('div', {class: 'lead'}, '抓到了！下面是試玩員回報的 Bug，選出「最該檢查的地方」：'));
-    SC.forEach(([q, opts, a, why], qi) => {
-      const row = h('div', {class: 'item col' + (S.bugs[qi] ? ' right' : '')}, h('div', {class: 't'}, q));
-      const bs = h('div', {class: 'opts'});
-      opts.forEach((o, oi) => bs.append(h('button', {onclick: ev => {
-        if (S.bugs[qi]) return;
-        if (oi === a) { S.bugs[qi] = 1; save(); sfx('right'); row.classList.add('right'); bs.querySelectorAll('button').forEach(b => { b.disabled = true; }); row.append(h('div', {class: 'why2'}, '✓ ' + why)); if (Object.keys(S.bugs).length === SC.length) { nb.disabled = false; cheer(); toast('你已經是合格的 Bug 獵人！'); } }
-        else { ev.target.classList.add('wrong'); sfx('wrong'); setTimeout(() => ev.target.classList.remove('wrong'), 600); }
-      }}, o)));
-      if (S.bugs[qi]) bs.querySelectorAll('button').forEach(b => { b.disabled = true; });
-      row.append(bs); if (S.bugs[qi]) row.append(h('div', {class: 'why2'}, '✓ ' + why)); body.append(row);
-    });
+    const qi = SC.findIndex((_, i) => !S.bugs[i]);
+    if (qi < 0) { body.append(h('div', {class: 'lead'}, `✓ ${SC.length} 隻 Bug 都找出來了！以後交貨前，就靠你檢查囉。`)); nb.disabled = false; return; }
+    const [kind, q, opts, a, why] = SC[qi];
+    const cv = h('canvas', {class: 'bdcv'}); const cap = h('div', {class: 'bdcap'}, '🔴 試玩員的錄影（第 ' + (qi + 1) + ' / ' + SC.length + ' 隻 Bug）');
+    stopDemo = startDemo(cv, kind, false);
+    const right = h('div', {class: 'bdq'}, h('div', {class: 'bdt'}, q), h('div', {class: 'lead'}, '看影片：哪裡怪怪的？選出「最該檢查的地方」：'));
+    const bs = h('div', {class: 'bdopts'});
+    opts.forEach((o, oi) => bs.append(h('button', {class: 'ropt', onclick: ev => {
+      if (oi === a) {
+        S.bugs[qi] = 1; save(); sfx('right'); bs.querySelectorAll('button').forEach(b => { b.disabled = true; }); ev.target.classList.add('okopt');
+        stopDemo && stopDemo(); stopDemo = startDemo(cv, kind, true); cap.textContent = '🟢 修好之後的樣子';
+        right.append(h('div', {class: 'why2'}, '✓ ' + why),
+          h('button', {class: 'btn', onclick: () => { sfx('whoosh'); render(); }}, qi + 1 < SC.length ? '下一隻 Bug →' : '全部找完了！'));
+        boss() && boss().once('Cheer');
+        if (Object.keys(S.bugs).length === SC.length) { nb.disabled = false; cheer(); toast('你已經是合格的 Bug 獵人！'); }
+      } else { ev.target.classList.add('bad'); sfx('wrong'); setTimeout(() => ev.target.classList.remove('bad'), 600); }
+    }}, o)));
+    right.append(bs);
+    body.append(h('div', {class: 'bdwrap'}, h('div', {class: 'bdl'}, cv, cap), right));
   };
   if (view) { stage('desk'); }
   if (!S.caught) {

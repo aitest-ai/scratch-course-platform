@@ -147,3 +147,13 @@ body.flat #gl{display:none}body.flat{overflow:auto}
 @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 @media(max-width:900px){.rform{grid-template-columns:1fr}}
 .rl .bimg{max-width:250px}.rform{grid-template-columns:.8fr 1.4fr}#card.wide{max-height:72vh}
+
+/* Bug 示範影片 */
+.bdwrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.bdcv{width:100%;border:3px solid #2b2358;border-radius:12px;background:#fff;display:block}
+.bdcap{margin-top:6px;font-weight:800;font-size:14px;color:#6a5a8a}
+.bdt{font-size:19px;font-weight:800;margin-bottom:6px;line-height:1.5}
+.bdopts{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.ropt.okopt{background:#e6f5ec;border-color:#2f8f5b}
+.bdq .why2{margin:8px 0;font-weight:700;color:#1f6a43}
+@media(max-width:900px){.bdwrap{grid-template-columns:1fr}}
