@@ -121,21 +121,28 @@ async function stepFall(tk) {
 /* ---------- 步驟 2：為什麼做遊戲 ---------- */
 async function stepWhy(tk) {
   stage('pair');
-  await talk([B(`${nm()}，動手之前，先回答你心裡可能在想的問題。`), B('為什麼要學做遊戲？'), B('我準備了五張卡片，一張一張點開看看！')], tk);
+  const ME = (t, o) => Object.assign({w: nm(), t}, o || {});
+  await talk([B(`${nm()}，動手之前，你心裡是不是有個疑問？`), ME('……老闆，我只是個學生，為什麼要學做遊戲啊？', {}),
+    B('問得好！先聽我說一個祕密。'), B('你每天玩的遊戲，背後都有人決定：蘋果掉多快、怪物長怎樣、幾條命。'),
+    B('玩遊戲，是照別人的規則走。做遊戲，規則你說了算！', {do: () => boss() && boss().once('Cheer')}),
+    ME('規則我說了算……聽起來有點酷。', {choices: ['那做遊戲會不會很難？']})], tk);
   if (dead(tk)) return;
-  const R = [
-    ['🎮', '從玩家變成創作者', '玩別人的遊戲，只能照別人的規則玩。自己做遊戲，規則你說了算：蘋果掉多快、怪物長什麼樣，都是你決定。'],
-    ['🔧', '像工程師一樣解決問題', '遊戲做出來不會一次就對，常會冒出 Bug。找出哪裡壞掉、想辦法修好，就是軟體工程師每天在做的事。'],
-    ['💡', '想法變成真的', '腦袋裡的點子，一堂課之後就能在螢幕上動起來，還能讓別人玩得很開心。'],
-    ['🧠', '學到的東西到處能用', '你用積木學到的「變數、迴圈、條件」，跟手機遊戲、Python 程式用的是同一套想法。'],
-    ['🏆', '還有大獎等著你', '做完訂單可以賺金幣，把工作室和你的機台升級得超酷。最後，你的遊戲會放上真正的街機機台，用搖桿來玩！']
-  ];
-  const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = async () => { await talk([B('五個理由都看完啦！'), B('接下來，我帶你看遊戲的「內臟」。')], tk); if (dead(tk)) return; done(1); go(2); };
-  const box = h('div', {class: 'why'});
-  const refresh = () => { nb.disabled = Object.keys(S.why).length < R.length; box.replaceChildren(...R.map((r, i) => h('button', {class: 'wcard' + (S.why[i] ? ' open' : '') + (i === 4 && Object.keys(S.why).length < 4 ? ' lock' : ''), onclick: () => { if (i === 4 && Object.keys(S.why).length < 4) { toast('先看完前面四張，才能看到大獎！'); sfx('wrong'); return; } if (!S.why[i]) { S.why[i] = 1; save(); sfx('right'); boss() && boss().once(i === 4 ? 'Cheer' : 'Interact'); view && view.burst({x: 1.4, y: 1.4, z: 0}, 0xffc83d, 24, 3); } refresh(); }},
-    h('b', {}, r[0] + ' ' + (S.why[i] || i < 4 ? r[1] : '？？？')), S.why[i] ? h('div', {class: 'wtxt'}, r[2]) : h('div', {class: 'wtxt dim'}, i === 4 ? '看完前四張就會解鎖' : '點開看看')))); };
-  refresh();
-  panel(h('h2', {}, '老闆的五個理由'), box, nav(() => go(0), nb));
+  await talk([B('哈哈，一定會出錯，這很正常。'), B('遊戲常常冒出 Bug，像蘋果穿過籃子、分數亂跳。'),
+    B('可是找出哪裡壞掉、想辦法修好，就是軟體工程師每天在做的事。', {do: () => boss() && boss().once('Interact')}),
+    ME('所以抓 Bug，其實是在練習當工程師？', {}), B('完全正確！你一開口就比我還懂。'),
+    ME('那我學到的東西，只能拿來做遊戲嗎？', {choices: ['這個我也想知道']})], tk);
+  if (dead(tk)) return;
+  await talk([B('不只喔。你用積木學的「變數、迴圈、條件」，'), B('手機遊戲、Python 程式用的是同一套想法。'),
+    B('今天腦袋裡冒出的點子，一堂課之後就能在螢幕上動起來，還能讓別人玩得很開心。'),
+    ME('那我做完訂單，有什麼好處？', {choices: ['快說快說！']})], tk);
+  if (dead(tk)) return;
+  sfx('right'); view && view.burst({x: 1.4, y: 1.4, z: 0}, 0xffc83d, 40, 3);
+  await talk([B('做完訂單賺金幣，工作室跟你的機台都能升級！', {do: () => boss() && boss().once('Cheer')}),
+    B('最後，你的遊戲會放上那台真正的街機，客人用搖桿親自玩！'),
+    ME('哇，我的遊戲被別人玩……我要做！'),
+    B('好！一句話整理：玩家變創作者，Bug 變挑戰，點子變真的。'), B('接下來，我帶你看遊戲的「內臟」。')], tk);
+  if (dead(tk)) return;
+  done(1); go(2);
 }
 
 /* ---------- 步驟 3：拆開遊戲看積木 ---------- */
