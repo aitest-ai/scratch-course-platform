@@ -263,6 +263,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     customers: {p: [0.2, 1.6, -2.9], l: [0.2, 0.7, 3]},
     focus: {p: [0, 1.5, 0], l: [0, 1.2, 3]},
     cabinet: {p: [-1.8, 1.7, 3.8], l: [-5.0, 1.6, -1.4]},
+    screen: {p: [-4.0, 1.75, 1.2], l: [-5.1, 1.8, -1.7]},
     insert: {p: [-3.7, 1.45, 2.4], l: [-5.1, .75, -1.7]},
     desk: {p: [0, 1.5, 4.6], l: [0, 1.0, -1.2]},
     types: {p: [0, 1.55, 5.4], l: [0, 1.2, 0]}
@@ -325,7 +326,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
       setC(c, {x: a1.x, y: a1.y, z: a1.z, s: .3, rx: -Math.PI / 2, rz: yaw, ry: 0});
       setTimeout(() => { c.userData.ty = {x: a2.x, y: a2.y, z: a2.z, rx: -Math.PI / 2, rz: yaw, ry: 0, s: .3}; }, 900);
       const sp = cab.localToWorld(cabSlot.clone()), sc2 = cab.localToWorld(new THREE.Vector3(0, 1.9, .9));
-      setTimeout(() => { burst(sp, 0xffc83d, 70, 4); burst(sc2, 0x38e1ff, 40, 3); flash(500); scrMode = 'boot'; bootTitle = META[id] ? META[id].title : id; bootStart = (performance.now() - t0) / 1000; }, 1150);
+      setTimeout(() => { burst(sp, 0xffc83d, 70, 4); burst(sc2, 0x38e1ff, 40, 3); flash(500); shot = 'screen'; scrMode = 'boot'; bootTitle = META[id] ? META[id].title : id; bootStart = (performance.now() - t0) / 1000; }, 1150);
       setTimeout(cb, 2400);
     },
     eject() { if (insertId) { layout(mode); insertId = null; scrMode = 'glitch'; shot = prevShot; } }
