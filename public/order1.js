@@ -47,7 +47,7 @@ const CUS = '水果攤老闆娘';
 const M = (t, o) => Object.assign({w: CUS, t}, o || {});          // 客人說
 
 /* ---------- 進度列、金幣 ---------- */
-const STEPS = ['接單', '問需求', '簽約', '備素材', '開工', '交貨', '客人追加', '抓 Bug', '結單'];
+const STEPS = ['接單', '問需求', '簽約', '備素材', '開工', '客人試玩', '客人追加', '交貨前抓 Bug', '結單'];
 function renderSteps() {
   const n = $('#steps'); n.replaceChildren();
   STEPS.forEach((name, i) => n.append(h('div', {class: 'dot' + (i === S.step ? ' cur' : '') + (S.done[i] ? ' done' : '') + (i > S.step && !S.done[i] ? ' todo' : '')}, h('b', {}, S.done[i] ? '✓' : String(i + 1)), name)));
@@ -509,7 +509,7 @@ async function stepDeliver(tk) {
   showBench(false); await stage(); if (rpg.dead(tk)) return;
   if (view) { await meiAt(6.5, 1.8, Math.PI / 2); const a = view.actors.mei; a.speed = 2.8; a.goto(0.2, 1.8, Math.PI); view.shot('customers'); await wait(2600); }
   await talk([
-    B(`${nm()}，你的第一個遊戲做好了！`), B('我把它插上街機，請客人來驗收。', {do: () => view && view.cabinet('idle', '')}),
+    B(`${nm()}，你的第一個遊戲做好了！`), B('我把它插上街機，請客人來試玩看看。', {do: () => view && view.cabinet('idle', '')}),
     N('水果攤老闆娘拿起搖桿……不，是按了鍵盤的左右鍵。'),
     M('哇！籃子會動！水果真的掉下來了！', {do: () => { view && view.actors.mei && view.actors.mei.once('Cheer'); view && view.burst({x: 0.2, y: 1.8, z: 1.8}, 0xffc83d, 50, 3); }}),
     M('跟我說的一模一樣，太棒了！')], tk);
@@ -537,8 +537,10 @@ async function stepBug(tk) {
   pay('power', 50);
   if (view) { view.shot('desk'); await wait(400); }
   await talk([
-    B('強化版做得不錯！客人很滿意。', {do: bossDo('Cheer')}), N('就在這時，街機螢幕突然閃了一下，畫面全是亂碼。', {do: () => { sfx('bad'); view && view.cabinet('glitch', ''); view && view.flash(500); }}),
-    B('糟了……是 Bug 怪！'), B('他又溜進來搗亂了！快看，他在桌上亂跑，點一下把他抓起來！')], tk);
+    B('強化版做得不錯！客人看了很滿意。', {do: bossDo('Cheer')}), B('不過先別急著叫客人來拿。'),
+    B('遊戲交出去之前，一定要先抓 Bug。'), B('不然客人拿到會壞掉的遊戲，馬上就會來客訴。', {img: 'bug'}),
+    N('就在老闆說話的時候，街機螢幕突然閃了一下，畫面全是亂碼。', {img: '', do: () => { sfx('bad'); view && view.cabinet('glitch', ''); view && view.flash(500); }}),
+    B('說曹操，曹操就到……是 Bug 怪！'), B('他又溜進來搗亂了！快看，他在桌上亂跑，點一下把他抓起來！')], tk);
   if (rpg.dead(tk)) return;
   if (!view) { await caughtBug(tk); return; }
   view.bug(true); view.pickCb(async p => { if (p.kind === 'bug') { view.bugCaught(); view.pickCb(null); sfx('combo'); view.actors.boss && view.actors.boss.once('Cheer'); await caughtBug(tk); } });
@@ -555,7 +557,7 @@ async function stepWrap(tk) {
   if (view) { await meiAt(6.5, 1.8, Math.PI / 2); const a = view.actors.mei; a.speed = 2.8; a.goto(0.2, 1.8, Math.PI); view.shot('customers'); view.cabinet('idle', ''); await wait(2400); }
   pay('debug', 40);
   await talk([
-    B('Bug 修好了，客人也驗收完了。', {do: bossDo('Cheer')}),
+    B('Bug 修好了，客人來取貨，也順利驗收了。', {do: bossDo('Cheer')}),
     M(`${nm()}，謝謝你！我的水果攤要靠你的遊戲吸引客人囉！`, {do: () => { view && view.actors.mei && view.actors.mei.once('Cheer'); }}),
     B('訂單 #1，完成！'), B('先別急著開心，結單之前，要自己檢查一下。')], tk);
   if (rpg.dead(tk)) return;
