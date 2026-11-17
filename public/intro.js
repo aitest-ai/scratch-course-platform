@@ -311,25 +311,26 @@ async function stepRecipe(tk) {
 /* ---------- 步驟 7：Bug 怪與麻煩事件 ---------- */
 async function stepBug(tk) {
   const SC = [
-    ['客人臨時說：「我想要再加一個炸彈！」', ['整個遊戲刪掉重做', '在原本的遊戲加一個新角色和新規則', '假裝沒聽到'], 1, '加新需求不用重來，在原本的程式上多加一個角色和規則就好。'],
-    ['試玩員說：「籃子會飛出畫面外！」', ['把籃子刪掉', '找到控制 x 座標的積木，加上最左和最右的限制', '叫玩家不要往右邊走'], 1, '找出控制位置的積木，加上限制，這就是除錯。'],
-    ['試玩員說：「我接到蘋果，分數怎麼不會加？」', ['檢查「碰到籃子」那一段，有沒有「分數加 1」的積木', '把分數改成固定 100', '重新開機'], 0, '分數不動，先檢查「碰到」那一段有沒有改變分數的積木。'],
-    ['交期倒數：客人明天就來拿！', ['全部重做', '先做好最重要的玩法，其他功能之後再加', '放棄這張訂單'], 1, '時間不夠時，先做出可以玩的核心，再慢慢加功能。']
+    ['試玩員回報：「籃子會飛出畫面外！」', ['把籃子刪掉', '找到控制 x 座標的積木，加上最左和最右的限制', '叫玩家不要往右邊走'], 1, '找出控制位置的積木，加上限制，這就是除錯。'],
+    ['試玩員回報：「我接到蘋果，分數怎麼不會加？」', ['檢查「碰到籃子」那一段，有沒有「分數加 1」的積木', '把分數改成固定 100', '重新開機'], 0, '分數不動，先檢查「碰到」那一段有沒有改變分數的積木。'],
+    ['試玩員回報：「蘋果掉到地板還一直留在畫面上，越堆越多！」', ['讓蘋果掉慢一點', '在「碰到地板」時，加上「刪除這個分身」的積木', '把地板顏色換掉'], 1, '分身用完要刪掉，不然會越積越多，遊戲就會越來越卡。'],
+    ['試玩員回報：「炸彈碰到籃子，生命卻沒有減少！」', ['把炸彈改成蘋果', '把生命一開始改成 100', '檢查炸彈「碰到籃子」那一段，有沒有「生命 −1」的積木'], 2, '先看症狀，再找到負責那件事的積木，通常就是少了一塊或放錯地方。']
   ];
   const nb = h('button', {class: 'btn', disabled: ''}, '下一步'); nb.onclick = () => { done(6); go(7); };
   const body = h('div', {});
   const render = () => {
     body.replaceChildren();
     if (!S.caught) { body.append(h('div', {class: 'lead'}, '🐛 桌上有一隻亂跑的 Bug 怪，點他把他抓起來！')); return; }
-    body.append(h('div', {class: 'lead'}, '抓到了！下面是接單路上會遇到的「麻煩事件卡」，選出最好的處理方式：'));
+    body.append(h('div', {class: 'lead'}, '抓到了！下面是試玩員回報的 Bug，選出「最該檢查的地方」：'));
     SC.forEach(([q, opts, a, why], qi) => {
       const row = h('div', {class: 'item col' + (S.bugs[qi] ? ' right' : '')}, h('div', {class: 't'}, q));
       const bs = h('div', {class: 'opts'});
-      opts.forEach((o, oi) => bs.append(h('button', {disabled: S.bugs[qi] ? '' : null, onclick: ev => {
+      opts.forEach((o, oi) => bs.append(h('button', {onclick: ev => {
         if (S.bugs[qi]) return;
         if (oi === a) { S.bugs[qi] = 1; save(); sfx('right'); row.classList.add('right'); bs.querySelectorAll('button').forEach(b => { b.disabled = true; }); row.append(h('div', {class: 'why2'}, '✓ ' + why)); if (Object.keys(S.bugs).length === SC.length) { nb.disabled = false; cheer(); toast('你已經是合格的 Bug 獵人！'); } }
         else { ev.target.classList.add('wrong'); sfx('wrong'); setTimeout(() => ev.target.classList.remove('wrong'), 600); }
       }}, o)));
+      if (S.bugs[qi]) bs.querySelectorAll('button').forEach(b => { b.disabled = true; });
       row.append(bs); if (S.bugs[qi]) row.append(h('div', {class: 'why2'}, '✓ ' + why)); body.append(row);
     });
   };
@@ -337,7 +338,7 @@ async function stepBug(tk) {
   if (!S.caught) {
     await talk([B('最後一件事！'), B('工作室有個頭痛人物，叫做 Bug 怪。'), B('程式只要有一點點錯，他就跑出來搗亂。'), B('快看，他來了！點一下桌上亂跑的那隻，把他抓起來！')], tk);
     if (dead(tk)) return;
-    if (view) { view.bug(true); view.pickCb(async p => { if (p.kind === 'bug') { view.bugCaught(); view.pickCb(null); S.caught = true; save(); sfx('combo'); view.actors.boss && view.actors.boss.once('Cheer'); render(); await talk([B('抓到了！太棒了！'), B('不過 Bug 怪只是在提醒你哪裡寫錯了。'), B('接單的路上還會碰到各種麻煩事件，來練習怎麼處理吧！')], tk); } }); } else S.caught = true;
+    if (view) { view.bug(true); view.pickCb(async p => { if (p.kind === 'bug') { view.bugCaught(); view.pickCb(null); S.caught = true; save(); sfx('combo'); view.actors.boss && view.actors.boss.once('Cheer'); render(); await talk([B('抓到了！太棒了！'), B('不過 Bug 怪只是在提醒你，哪裡寫錯了。'), B('除錯三步驟：看症狀、猜是哪一段積木、改了再試一次。', {img: 'bug'}), B('來，幫試玩員找找這幾隻 Bug 在哪裡！', {img: ''})], tk); } }); } else S.caught = true;
   } else { view && view.bug(false); }
   render();
   if (Object.keys(S.bugs).length === SC.length) nb.disabled = false;
