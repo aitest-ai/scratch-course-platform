@@ -69,7 +69,7 @@ async function stage(opening) {
   if (!view) return;
   view.enterRoom(); view.layout('none');
   const bo = view.actors.boss || await view.addActor('boss', 0, -1.8, {face: .5});
-  if (opening) { view.props(true); bo.tx = 0; bo.tz = -1.8; bo.g.position.set(0, 0, -1.8); bo.face = .5; bo.g.rotation.y = .5; }
+  if (opening) { view.props(true); bo.tx = -0.4; bo.tz = 1.2; bo.g.position.set(-0.4, 0, 1.2); bo.face = 0; bo.g.rotation.y = 0; }
   else { view.props(false); bo.tx = 1.6; bo.tz = -2.3; bo.g.position.set(1.6, 0, -2.3); bo.face = -.2; bo.g.rotation.y = -.2; }
   view.unfocus();
 }
@@ -97,7 +97,7 @@ function go(i) {
 async function stepOrder(tk) {
   look = false; wantFocus = false;
   showBench(false); await stage(true); if (rpg.dead(tk)) return;
-  view && view.shot('boss');
+  view && view.shot('open');
   if (!S.name) {
     const v = await talk([B('歡迎光臨星光遊戲工作室！'), B('你叫什麼名字？', {input: '輸入你的名字'})], tk);
     if (rpg.dead(tk)) return; S.name = v; save();
@@ -110,7 +110,7 @@ async function stepOrder(tk) {
     B('咦，門口有人來了。你站到櫃台後面，我們一起接這張單。')], tk);
   if (rpg.dead(tk)) return;
   if (view) {
-    const bo = view.actors.boss; bo.goto(1.6, -2.3, -.2); view.props(false); view.shot('customers');
+    const bo = view.actors.boss; bo.goto(2.8, -0.5, null, () => bo.goto(1.6, -2.3, -.2)); view.shot('customers'); await wait(3800); view.props(false);
     const a = await meiAt(0.2, 5.0); a.speed = 2.8; a.goto(0.2, 1.8, Math.PI); await wait(3200);
   } else await wait(300);
   look = true;
