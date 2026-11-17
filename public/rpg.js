@@ -8,7 +8,7 @@ const el = (tag, attrs, ...kids) => {
   return e;
 };
 
-export function createRpg({sfx = () => {}, toast = () => {}, getName = () => '新人'} = {}) {
+export function createRpg({sfx = () => {}, toast = () => {}, getName = () => '新人', onSpeak = () => {}, onEnd = () => {}, onTyped = () => {}} = {}) {
   let token = 0, skipFn = null;
   const dead = tk => tk !== token;
   const hide = () => { const d = $('#dlg'); d.hidden = true; const c = $('#card'); c && c.classList.remove('mute'); skipFn = null; };
@@ -18,6 +18,7 @@ export function createRpg({sfx = () => {}, toast = () => {}, getName = () => '�
     return new Promise(res => {
       const d = $('#dlg'); d.hidden = false; d.classList.remove('out'); const c = $('#card'); c && c.classList.add('mute');
       const who = l.w === undefined ? 'boss' : l.w;
+      try { onSpeak(who, l); } catch (e) { /* 鏡頭失敗不影響對話 */ }
       const np = $('#dlgname');
       np.textContent = who === 'boss' ? '老闆' : who === '@me' ? getName() : (who || '');
       np.hidden = !who; np.className = 'nameplate ' + (who === 'boss' ? 'boss' : who === '@me' ? 'me' : 'npc');
@@ -27,7 +28,7 @@ export function createRpg({sfx = () => {}, toast = () => {}, getName = () => '�
       if (l.do) l.do();
       const full = l.t; let i = 0, typing = true, timer = null;
       const finish = () => {
-        typing = false; clearInterval(timer); tx.textContent = full;
+        typing = false; clearInterval(timer); tx.textContent = full; try { onTyped(who); } catch (e) { /* 略 */ }
         if (l.choices) {
           l.choices.forEach((t, ci) => ch.append(el('button', {class: 'dchoice', onclick: () => { skipFn = null; sfx('right'); res(ci); }}, t)));
           skipFn = null;
@@ -61,7 +62,7 @@ export function createRpg({sfx = () => {}, toast = () => {}, getName = () => '�
       out = await showLine(typeof l === 'string' ? {t: l} : l, tk);
       if (out === 'x') return 'x';
     }
-    if (!dead(tk)) hide();
+    if (!dead(tk)) { hide(); try { onTyped(''); onEnd(); } catch (e) { /* 略 */ } }
     return out;
   }
   const B = (t, o) => Object.assign({w: 'boss', t}, o || {});     // 老闆

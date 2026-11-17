@@ -222,7 +222,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     const CH = CHARS[key] || {};
     (CH.strip || []).forEach(n => { const o = root.getObjectByName(n); if (o && o.parent) o.parent.remove(o); });
     if (CH.astronaut) makeAstronaut(root);
-    let stallObj = null; if (CH.stall) { stallObj = makeStall(g); makeFruitGear(root); }
+    let stallObj = null; if (CH.stall) { makeFruitGear(root); }
     root.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(root, true); const s = (CH.h || 2.0) / (b.max.y - b.min.y); a_h = (b.max.y - b.min.y) * s; root.scale.setScalar(s); root.position.y = -b.min.y * s;
     const sd = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), new THREE.MeshBasicMaterial({map: shadowTex, transparent: true, depthWrite: false})); sd.rotation.x = -Math.PI / 2; sd.position.y = .02; g.add(sd);
     const mixer = new THREE.AnimationMixer(root);
@@ -237,6 +237,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     if (d > .06) { const v = Math.min(d, a.speed * dt); a.g.position.x += dx / d * v; a.g.position.z += dz / d * v; const ang = Math.atan2(dx, dz); let da = ang - a.g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); a.g.rotation.y += da * Math.min(1, dt * 10); a.play('Walking_A'); }
     else { let da = a.face - a.g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); a.g.rotation.y += da * Math.min(1, dt * 8); if (a.cur === 'Walking_A') { a.play('Idle'); if (a.onArrive) { const f = a.onArrive; a.onArrive = null; f(); } } }
     a.mixer.update(dt);
+    if (a.talking) { const hb = a.head || (a.head = a.g.getObjectByName('head')); if (hb) { const tt = performance.now() / 1000; hb.rotation.x += Math.sin(tt * 9) * .07 - .03; hb.rotation.z += Math.sin(tt * 4.3) * .04; } }
   }
 
   /* ---------- Bug 怪 ---------- */
@@ -255,6 +256,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     portal: {p: [0, 1.5, 8], l: [0, 1.3, 0]},
     room: {p: [0, 1.55, 5.6], l: [0, 1.25, -1]},
     boss: {p: [0, 1.6, 6.0], l: [0, 1.3, -1.8]},
+    toBoss: {p: [-0.1, 1.6, -3.6], l: [1.6, 1.45, -2.3]},
     pair: {p: [0, 1.6, 6.0], l: [0, 1.3, -1.8]},
     customers: {p: [0.2, 1.6, -2.9], l: [0.2, 0.7, 3]},
     focus: {p: [0, 1.5, 0], l: [0, 1.2, 3]},
@@ -304,7 +306,8 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     // 聚焦某位客人：鏡頭拉近，其他人先隱藏；card 在右邊，所以把人物放在畫面左側
     focus(key) { const a = actors[key]; if (!a) return; Object.entries(actors).forEach(([k, o]) => { o.g.visible = (k === key); if (o.stall) o.stall.visible = (k === key); });
       SHOTS.focus.p = [a.g.position.x - 1.35, 1.4, a.g.position.z - 2.9]; SHOTS.focus.l = [a.g.position.x - 1.35, 1.1, a.g.position.z]; shot = 'focus'; },
-    unfocus() { Object.values(actors).forEach(o => { o.g.visible = true; if (o.stall) o.stall.visible = false; }); shot = 'customers'; },
+    talk(key) { Object.values(actors).forEach(o => { o.talking = false; }); if (key && actors[key]) actors[key].talking = true; },
+  unfocus() { Object.values(actors).forEach(o => { o.g.visible = true; if (o.stall) o.stall.visible = false; }); shot = 'customers'; },
     enterRoom() { roomVisible(true); stars.visible = false; },
     layout, pickCb(cb) { pickCb = cb || null; },
     say(key, text) { bubKey = text ? key : null; bub.hidden = !text; if (text) bub.textContent = text; },
@@ -330,7 +333,6 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
   (function loop() {
     const dt = Math.min(.25, clock.getDelta()), t = (performance.now() - t0) / 1000;
     const S = SHOTS[shot], kc = 1 - Math.exp(-dt * 2.8); camera.position.x += (S.p[0] - camera.position.x) * kc; camera.position.y += (S.p[1] - camera.position.y) * kc; camera.position.z += (S.p[2] - camera.position.z) * kc;
-    camera.position.y += Math.sin(t * 1.3) * .004; camera.position.x += Math.sin(t * .7) * .003;
     const kl = 1 - Math.exp(-dt * 3); camLook.x += (S.l[0] - camLook.x) * kl; camLook.y += (S.l[1] - camLook.y) * kl; camLook.z += (S.l[2] - camLook.z) * kl; camera.lookAt(camLook);
     carts.forEach((c, i) => {
       const ty = c.userData.ty, id = c.userData.id, hov = hoverKey === 'cart:' + id && !insertId;

@@ -22,7 +22,26 @@ if (!S.name) { try { S.name = (JSON.parse(localStorage.getItem('ninja-l0-v2')) |
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 不影響 */ } };
 const nm = () => S.name || '新人';
 
-const rpg = createRpg({sfx, toast, getName: nm});
+// 第一視角：說話的人是誰，視線就轉向誰（只在站在櫃台後面的場景啟用）
+let look = false, wantFocus = false;
+let lastEmote = 0;
+const keyOf = who => who === 'boss' ? 'boss' : (who && who !== '@me' ? 'mei' : null);
+function onSpeak(who, l) {
+  if (!view) return;
+  const key = keyOf(who);
+  view.talk(key);                                          // 說話時點頭擺頭
+  if (key && l) {                                          // 有動作：句子有強調語氣就比個手勢
+    const e = l.e || (/[！？]/.test(l.t) && performance.now() - lastEmote > 3500 ? 'Interact' : null);
+    if (e) { lastEmote = performance.now(); const a = view.actors[key]; a && a.once(e); }
+  }
+  if (!look) return;
+  const bo = view.actors.boss;
+  if (bo) bo.face = who === 'boss' || who === '@me' ? -2.2 : -.2;   // 老闆對主角說話就轉過來看著主角；客人說話就看客人
+  if (who === '') return;                                  // 旁白不動
+  if (who === 'boss') { if (wantFocus) view.unfocus(); view.shot('toBoss'); }
+  else if (wantFocus) view.focus('mei'); else view.shot('customers');
+}
+const rpg = createRpg({sfx, toast, getName: nm, onSpeak, onTyped: who => { if (view && !who) view.talk(null); else if (view && who && who !== '@me') { /* 打字結束，停止點頭 */ view.talk(null); } }, onEnd: () => { if (look && wantFocus && view) view.focus('mei'); }});
 const {talk, B, N, ME} = rpg;
 const CUS = '水果攤老闆娘';
 const M = (t, o) => Object.assign({w: CUS, t}, o || {});          // 客人說
@@ -46,11 +65,12 @@ const CART_IDS = ['catch', 'slice', 'dodge', 'fight', 'parkour', 'puzzle'];
 const SPARE = {parkour: {title: '跑酷', color: '#e8883a'}, puzzle: {title: '益智', color: '#3aa8a8'}};
 const info = id => META[id] || SPARE[id];
 let view = null;
-async function stage() {
+async function stage(opening) {
   if (!view) return;
-  view.enterRoom(); view.layout('none'); view.props(false);
+  view.enterRoom(); view.layout('none');
   const bo = view.actors.boss || await view.addActor('boss', 0, -1.8, {face: .5});
-  bo.tx = 1.6; bo.tz = -2.3; bo.g.position.set(1.6, 0, -2.3); bo.face = -.2; bo.g.rotation.y = -.2;
+  if (opening) { view.props(true); bo.tx = 0; bo.tz = -1.8; bo.g.position.set(0, 0, -1.8); bo.face = .5; bo.g.rotation.y = .5; }
+  else { view.props(false); bo.tx = 1.6; bo.tz = -2.3; bo.g.position.set(1.6, 0, -2.3); bo.face = -.2; bo.g.rotation.y = -.2; }
   view.unfocus();
 }
 async function meiAt(x, z, face = Math.PI) {
@@ -75,15 +95,25 @@ function go(i) {
 
 /* ================= 0 接單 ================= */
 async function stepOrder(tk) {
-  showBench(false); await stage(); if (rpg.dead(tk)) return;
-  view && view.shot('customers');
+  look = false; wantFocus = false;
+  showBench(false); await stage(true); if (rpg.dead(tk)) return;
+  view && view.shot('boss');
   if (!S.name) {
     const v = await talk([B('歡迎光臨星光遊戲工作室！'), B('你叫什麼名字？', {input: '輸入你的名字'})], tk);
     if (rpg.dead(tk)) return; S.name = v; save();
   }
-  await talk([N('星光遊戲工作室，今天開始營業。'), B(`${nm()}，你先站在我旁邊，看我怎麼接單。`)], tk);
+  await talk([
+    B(`歡迎來到星光遊戲工作室，${nm()}！`, {do: bossDo('Cheer')}),
+    B('這裡專門幫客人「訂做遊戲」。客人想要什麼，我們就做什麼。'),
+    B('我是老闆，負責接單。你是我的新設計師，要幫我把遊戲做出來。'),
+    B('接案的流程很簡單：接單、問清楚、拆成工作單、動手做、交貨。', {do: bossDo('Interact')}),
+    B('咦，門口有人來了。你站到櫃台後面，我們一起接這張單。')], tk);
   if (rpg.dead(tk)) return;
-  if (view) { const a = await meiAt(0.2, 5.0); a.speed = 2.8; a.goto(0.2, 1.8, Math.PI); await wait(3200); } else await wait(300);
+  if (view) {
+    const bo = view.actors.boss; bo.goto(1.6, -2.3, -.2); view.props(false); view.shot('customers');
+    const a = await meiAt(0.2, 5.0); a.speed = 2.8; a.goto(0.2, 1.8, Math.PI); await wait(3200);
+  } else await wait(300);
+  look = true;
   if (rpg.dead(tk)) return;
   await talk([
     M('老闆！我要訂一個遊戲！'), B('歡迎光臨！想要什麼樣的遊戲呀？'),
@@ -118,6 +148,7 @@ const QS = [
 const MUST = QS.filter(q => q.must);
 const mustDone = () => MUST.every(q => S.asked[q.k]);
 async function stepAsk(tk) {
+  look = true; wantFocus = true;
   showBench(false); await stage(); if (rpg.dead(tk)) return;
   if (view) { await meiAt(0.2, 1.8); view.focus('mei'); }
   let busy = false;
@@ -163,6 +194,7 @@ async function stepAsk(tk) {
 
 /* ================= 2 簽約：拆成工作單 ================= */
 async function stepSign(tk) {
+  look = true; wantFocus = true;
   showBench(false); await stage(); if (rpg.dead(tk)) return;
   if (view) { await meiAt(0.2, 1.8); view.focus('mei'); }
   const items = [
@@ -469,6 +501,7 @@ const stepBuild = tk => enterBuild(tk);
 
 /* ================= 5 交貨 + 客人抱怨（追加需求） ================= */
 async function stepDeliver(tk) {
+  look = true; wantFocus = false;
   showBench(false); await stage(); if (rpg.dead(tk)) return;
   if (view) { await meiAt(6.5, 1.8, Math.PI / 2); const a = view.actors.mei; a.speed = 2.8; a.goto(0.2, 1.8, Math.PI); view.shot('customers'); await wait(2600); }
   await talk([
@@ -495,6 +528,7 @@ const stepPower = tk => enterCode('power', tk);
 
 /* ================= 7 Bug 怪事件 ================= */
 async function stepBug(tk) {
+  look = false; wantFocus = false;
   showBench(false); await stage(); if (rpg.dead(tk)) return;
   pay('power', 50);
   if (view) { view.shot('desk'); await wait(400); }
@@ -512,6 +546,7 @@ async function caughtBug(tk) {
 
 /* ================= 8 結單 ================= */
 async function stepWrap(tk) {
+  look = true; wantFocus = false;
   showBench(false); await stage(); if (rpg.dead(tk)) return;
   if (view) { await meiAt(6.5, 1.8, Math.PI / 2); const a = view.actors.mei; a.speed = 2.8; a.goto(0.2, 1.8, Math.PI); view.shot('customers'); view.cabinet('idle', ''); await wait(2400); }
   pay('debug', 40);
