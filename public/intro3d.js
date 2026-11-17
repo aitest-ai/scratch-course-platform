@@ -237,7 +237,7 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
     if (d > .06) { const v = Math.min(d, a.speed * dt); a.g.position.x += dx / d * v; a.g.position.z += dz / d * v; const ang = Math.atan2(dx, dz); let da = ang - a.g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); a.g.rotation.y += da * Math.min(1, dt * 10); a.play('Walking_A'); }
     else { let da = a.face - a.g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); a.g.rotation.y += da * Math.min(1, dt * 8); if (a.cur === 'Walking_A') { a.play('Idle'); if (a.onArrive) { const f = a.onArrive; a.onArrive = null; f(); } } }
     a.mixer.update(dt);
-    if (a.talking) { const hb = a.head || (a.head = a.g.getObjectByName('head')); if (hb) { const tt = performance.now() / 1000; hb.rotation.x += Math.sin(tt * 9) * .07 - .03; hb.rotation.z += Math.sin(tt * 4.3) * .04; } }
+    if (a.talking) { const hb = a.head || (a.head = a.g.getObjectByName('head')); if (hb) { if (!a.hb0) a.hb0 = hb.rotation.clone(); const tt = performance.now() / 1000; hb.rotation.x = a.hb0.x + Math.sin(tt * 9) * .05; hb.rotation.z = a.hb0.z + Math.sin(tt * 4.3) * .03; } } else if (a.hb0 && a.head) { a.head.rotation.x = a.hb0.x; a.head.rotation.z = a.hb0.z; }
   }
 
   /* ---------- Bug 怪 ---------- */
@@ -254,14 +254,15 @@ export async function createWorld(canvas, {META, info, CART_IDS}) {
   /* ---------- 鏡頭 ---------- */
   const SHOTS = { // 第一人稱：鏡頭就是玩家的眼睛（眼高約 1.55）
     portal: {p: [0, 1.5, 8], l: [0, 1.3, 0]},
-    room: {p: [0, 1.55, 5.6], l: [0, 1.25, -1]},
-    boss: {p: [0, 1.6, 6.0], l: [0, 1.3, -1.8]},
-    open: {p: [-0.5, 1.6, 5.2], l: [-0.5, 1.6, -1.8]},
+    room: {p: [0, 1.55, 4.5], l: [0, 1.25, -1]},
+    boss: {p: [0, 1.6, 4.7], l: [0, 1.3, -1.8]},
+    open: {p: [-0.5, 1.6, 3.9], l: [-0.5, 1.6, -1.8]},
+    openBoss: {p: [-0.4, 1.65, 3.7], l: [-0.4, 1.6, 1.2]},
     toBoss: {p: [-0.1, 1.6, -3.6], l: [1.6, 1.45, -2.3]},
-    pair: {p: [0, 1.6, 6.0], l: [0, 1.3, -1.8]},
+    pair: {p: [0, 1.6, 4.7], l: [0, 1.3, -1.8]},
     customers: {p: [0.2, 1.6, -2.9], l: [0.2, 0.7, 3]},
     focus: {p: [0, 1.5, 0], l: [0, 1.2, 3]},
-    cabinet: {p: [-1.8, 1.7, 5.0], l: [-5.0, 1.6, -1.4]},
+    cabinet: {p: [-1.8, 1.7, 3.8], l: [-5.0, 1.6, -1.4]},
     desk: {p: [0, 1.5, 4.6], l: [0, 1.0, -1.2]},
     types: {p: [0, 1.55, 5.4], l: [0, 1.2, 0]}
   };

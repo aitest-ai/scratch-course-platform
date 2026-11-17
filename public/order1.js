@@ -97,7 +97,7 @@ function go(i) {
 async function stepOrder(tk) {
   look = false; wantFocus = false;
   showBench(false); await stage(true); if (rpg.dead(tk)) return;
-  view && view.shot('open');
+  view && view.shot('openBoss');
   if (!S.name) {
     const v = await talk([B('歡迎光臨星光遊戲工作室！'), B('你叫什麼名字？', {input: '輸入你的名字'})], tk);
     if (rpg.dead(tk)) return; S.name = v; save();
@@ -106,6 +106,9 @@ async function stepOrder(tk) {
     B(`歡迎來到星光遊戲工作室，${nm()}！`, {do: bossDo('Cheer')}),
     B('這裡專門幫客人「訂做遊戲」。客人想要什麼，我們就做什麼。'),
     B('我是老闆，負責接單。你是我的新設計師，要幫我把遊戲做出來。'),
+    B('你看，那邊那台街機。', {do: () => view && view.shot('cabinet')}),
+    B('客人訂的遊戲做好了，就會插在那台機器上，讓客人親自玩玩看。', {do: () => view && view.shot('cabinet')}),
+    B('所以每一張訂單，都是要做出一個「真的能玩」的遊戲。', {do: () => { view && view.shot('openBoss'); }}),
     B('接案的流程很簡單：接單、問清楚、拆成工作單、動手做、交貨。', {do: bossDo('Interact')}),
     B('咦，門口有人來了。你站到櫃台後面，我們一起接這張單。')], tk);
   if (rpg.dead(tk)) return;
