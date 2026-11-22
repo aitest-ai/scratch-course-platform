@@ -573,7 +573,7 @@ async function stepWrap(tk) {
     done(8); S.finished = true; save(); sfx('combo');
     await talk([B(`${nm()}，你做完第一張訂單了。`), B(`賺到 ${S.coins} 枚金幣，工作室的燈也亮了一點。`), B('下一張訂單，是那位獵人，他在門口等好久了。')], tk);
     sideShow(h('h2', {}, '訂單 #1 結單'), h('div', {class: 'rewards'}, h('span', {}, `🪙 金幣 ${S.coins}`), h('span', {}, '🔓 解鎖：強化模組'), h('span', {}, '🔓 解鎖：下一張訂單（獵人）')),
-      h('p', {class: 'sub'}, '下一張訂單「獵人・切水果」準備中。'), h('div', {class: 'sidebtns'}, dl, h('a', {class: 'btn', href: '/', style: 'text-decoration:none'}, '回街機城')));
+      h('p', {class: 'sub'}, '下一張訂單「獵人・切水果」準備中。'), h('div', {class: 'sidebtns'}, dl, h('a', {class: 'btn', href: '/week1.html', style: 'text-decoration:none'}, '回首頁')));
   };
   sideShow(h('h2', {}, '結單前自我檢查'), h('p', {class: 'sub'}, '誠實勾選。每一項都做到了，才能結單。'), list, h('div', {class: 'sidebtns'}, dl, nb));
 }
