@@ -265,6 +265,15 @@ function sheetCard() {
   return h('div', {class: 'scard paper'}, h('h3', {}, '📝 客人的需求單'), h('ul', {style: 'list-style:none;padding:0;margin:0'}, ...lines));
 }
 let slipExtra = null;
+function rest(next) {
+  sfx('combo');
+  const o = h('div', {id: 'rest', style: 'position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:#0009'},
+    h('div', {style: 'width:min(560px,92vw);background:#fffdf6;border:4px solid #5b4fd0;border-radius:22px;padding:26px 30px;box-shadow:0 0 0 4px #1d1840;text-align:center;color:#2b2358'},
+      h('div', {style: 'font-size:46px'}, '☕'), h('h2', {style: 'margin:6px 0'}, '第一節完成！休息一下'),
+      h('p', {style: 'font-size:17px;line-height:1.8;margin:6px 0 14px'}, '訂單已簽約、素材也備好了。進度已自動存檔，下課前關掉頁面也沒關係。第二節我們要在真正的 Scratch 裡，把遊戲做出來！'),
+      h('button', {class: 'btn', onclick: () => { o.remove(); next(); }}, '第二節開始，開工！')));
+  document.body.append(o);
+}
 function stepArt(tk) {
   showBench(true); stage(); preloadEditor();
   $('#editorLoading').style.display = 'none'; $('#bpage').hidden = false; benchHead();
@@ -275,7 +284,7 @@ function stepArt(tk) {
   const refresh = () => { prevB.innerHTML = basketSVG(A.basket, A.bc); prevI.innerHTML = itemSVG(A.item, A.ic); save(); };
   const choiceRow = (list, key) => { const r = h('div', {class: 'choices'}); list.forEach(c => { const b = h('button', {class: A[key] === c[0] ? 'on' : '', onclick: () => { A[key] = c[0]; r.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); refresh(); }}, c[1]); r.append(b); }); return r; };
   const colorRow = key => { const r = h('div', {class: 'colors'}); COLORS.forEach(c => { const b = h('button', {style: 'background:' + c, class: A[key] === c ? 'on' : '', onclick: () => { A[key] = c; r.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); refresh(); }}); r.append(b); }); return r; };
-  const nb = h('button', {class: 'btn'}, '素材準備好了，開工'); nb.disabled = !S.judged; nb.onclick = () => { done(3); go(4); };
+  const nb = h('button', {class: 'btn'}, '素材準備好了，開工'); nb.disabled = !S.judged; nb.onclick = () => { done(3); if (S.rested) return go(4); S.rested = true; save(); rest(() => go(4)); };
   const judge = [
     {t: '用素材工坊自己畫的籃子', ok: true, why: '自己畫的，可以放心用。'},
     {t: '同學畫的圖，他同意讓我用，我也在作品裡寫上他的名字', ok: true, why: '有經過同意並註明，這樣是尊重別人的作品。'},
