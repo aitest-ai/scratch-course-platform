@@ -46,6 +46,10 @@
 - [ ] 提供系統截圖、測試報告、匿名 CSV 範例、資料字典、部署與安全說明。
 - [ ] **實施正式施測前先請教師核定研究設計與預試結果**。
 
+
+### 2025 年新增：中文版 ESCAS Q1 驗證（不可混用正式原題與工作譯本）
+Zhang, S., & Wong, G. K. W. (2025). *Elementary student coding attitudes survey for Chinese students: Scale adaptation and exploration of influencing factors of children’s coding attitudes*. *Educational Technology Research and Development, 73*, 3597–3625. https://doi.org/10.1007/s11423-025-10529-3。研究以中國北方 1,539 名國小三至六年級學生建立 22 題、五向度中文 ESCAS，期刊 Q1。**出版社全文需訂閱，目前尚未取得或核對完整 22 題中文版題文及附錄**，因此研究工具 ZIP 的 C1–C6／I1–I5 僅為源自 Mason & Rich (2020) 的繁體中文**工作譯稿**，不是 Zhang & Wong 已驗證中文版；在取得正式題文、授權及臺灣語境檢核前請勿混稱。詳見研究交接 ZIP 的文獻說明。典藏摘要：https://hub.hku.hk/handle/10722/357860 。
+
 ## 重要文獻與效度界線
 - Mason & Rich (2020), ESCAS, *Computers & Education*：https://doi.org/10.1016/j.compedu.2020.103898 。完整英文原問卷：https://iacomputinged.org/wp-content/uploads/Instruments/Computing/PDF/Elementary%20Student%20Coding%20Attitudes%20Survey.pdf 。
 - Chen & Huang (2024), Scratch 找錯3分＋修正4分之發表方法，*International Journal of STEM Education*：https://doi.org/10.1186/s40594-024-00495-2 （未找到全套試題公開附件）。
