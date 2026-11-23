@@ -97,7 +97,7 @@ const stage = shot => { if (!view) return; Object.keys(CUSTOMERS).forEach(k => {
 
 /* ---------- 步驟 1：掉進去 ---------- */
 async function stepFall(tk) {
-  if (!S.name) {
+  if (!S.opened) {
     view && (view.layout('portal'), view.shot('portal'));
     const r = await talk([
       N('你正準備上 Scratch 課。'), N('突然，螢幕閃了一下！'),
@@ -108,9 +108,10 @@ async function stepFall(tk) {
     const nameIn = await talk([
       N('……咦？這裡是哪裡？'), N('眼前是一間燈光昏暗的工作室。'),
       B('哇！有人！太好了！'), B('我是這間「星光遊戲工作室」的老闆。'),
-      B('你叫什麼名字？', {input: true})], tk);
+      B(S.name ? `你就是新來的${S.name}同學吧？` : '你叫什麼名字？', S.name ? {choices: ['對，我是' + S.name]} : {input: true})], tk);
     if (dead(tk)) return;
-    S.name = nameIn; save();
+    if (!S.name) S.name = nameIn;
+    S.opened = true; save();
   } else stage('boss');
   const r2 = await talk([
     B(`${nm()}，好名字！`), B('老實說，工作室快撐不下去了……', {do: () => view && view.shot('cabinet')}),
