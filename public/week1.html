@@ -111,6 +111,23 @@ button.alt{background:#fff;font-size:16px;padding:9px 20px;box-shadow:0 4px 0 #2
       mk('▶ 繼續上次進度', 'go', null, inOrder ? '/order1.html' : '/intro.html');
       mk('重新開始', 'alt', function () { if (confirm('確定要清除進度、從頭開始嗎？')) { resetLocal(); location.href = '/intro.html'; } });
     } else mk('▶ 開始', 'go', null, '/intro.html');
+    if (au.cls === '測試班') testTools();
+  }
+  function testTools() {
+    var d = document.createElement('div'); d.className = 'note'; d.style.cssText = 'background:#fff4d6;border:2px dashed #e0a800;border-radius:12px;padding:12px';
+    d.innerHTML = '<b>🧪 測試帳號專用：跳到指定步驟</b><br>';
+    var names = ['接單', '問需求', '簽約', '備素材', '開工 Scratch', '客人試玩', '客人追加', '交貨前抓 Bug', '結單'];
+    names.forEach(function (n, i) {
+      var b = document.createElement('button'); b.className = 'alt'; b.style.cssText = 'font-size:14px;padding:5px 12px;margin:4px 4px 0 0'; b.textContent = (i + 1) + ' ' + n;
+      b.onclick = function () {
+        var o = get('ninja-o1-v1') || {}; o.name = au.name; o.step = i; o.done = o.done || [];
+        for (var k = 0; k < i; k++) o.done[k] = true; if (i > 3) o.rested = true;
+        localStorage.setItem('ninja-o1-v1', JSON.stringify(o));
+        var l = get('ninja-l0-v2') || {}; l.name = au.name; l.opened = true; l.done = [true, true, true, true, true, true, true, true]; localStorage.setItem('ninja-l0-v2', JSON.stringify(l));
+        location.href = '/order1.html';
+      }; d.appendChild(b);
+    });
+    box.parentNode.insertBefore(d, box.nextSibling);
   }
 })();
 </script>
