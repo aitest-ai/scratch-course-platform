@@ -17,6 +17,8 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 const KEY = 'ninja-l0-v2';
 let S = null; try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { /* 第一次 */ }
 S = Object.assign({step: 0, done: [], played: {}, name: '', why: {}, lit: {}, quiz: false, bugs: {}, caught: false}, S || {});
+const AUTH = (() => { try { return JSON.parse(localStorage.getItem('ninja-auth')); } catch (e) { return null; } })();
+if (!AUTH || !AUTH.token) { location.replace('/week1.html'); } else { S.name = AUTH.name; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 不影響 */ } };
 
 const CART_IDS = ['catch', 'slice', 'dodge', 'fight', 'parkour', 'puzzle'];

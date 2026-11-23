@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>老師後台｜星光遊戲工作室</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:#f4f2ff;color:#2b2358}
+header{background:#2a1b5e;color:#fff;padding:12px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}h1{margin:0;font-size:20px}
+main{padding:18px 20px;max-width:1100px;margin:auto}
+button,a.b{font:inherit;font-weight:800;background:#ffc83d;color:#2b2358;border:2px solid #2b2358;border-radius:10px;padding:6px 14px;cursor:pointer;text-decoration:none;font-size:14px}
+button.t{background:#fff}button.t.on{background:#5b4fd0;color:#fff}
+#lg{max-width:360px;margin:60px auto;background:#fff;border:3px solid #cfc9f0;border-radius:16px;padding:22px}
+#lg input{width:100%;font:inherit;padding:9px 12px;border:2px solid #2b2358;border-radius:10px;margin:4px 0 10px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;margin-top:12px}
+th,td{padding:8px 10px;border-bottom:1px solid #e6e2fb;text-align:left;font-size:15px}th{background:#e9e5ff}
+.st{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:800}
+.s0{background:#eee;color:#888}.s1{background:#ffe9b0;color:#7a5200}.s2{background:#cfe8ff;color:#0d4a85}.s3{background:#e3d5ff;color:#4b2a9a}.s4{background:#c9f2d9;color:#146b38}
+#tabs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.sum{margin:8px 0;font-weight:700}
+</style></head><body>
+<header><h1>👩‍🏫 老師後台</h1><span id="info"></span><span style="flex:1"></span><button id="rf" hidden>重新整理</button><button id="lo" hidden>登出</button></header>
+<main id="m"></main>
+<script>
+var LAB = {draft: ['已開工', 1], build: ['完成基本款', 2], power: ['完成強化', 3], debug: ['抓完 Bug', 3], wrap: ['已交貨', 4]};
+var tok = localStorage.getItem('ninja-admin'), data = null, cur = 0, timer = null;
+var m = document.getElementById('m');
+function fmt(t) { if (!t) return '—'; var d = Date.now() - t, mm = Math.floor(d / 60000); return mm < 1 ? '剛剛' : mm < 60 ? mm + ' 分鐘前' : new Date(t).toLocaleString('zh-TW', {hour12: false}); }
+function login() {
+  clearInterval(timer); document.getElementById('rf').hidden = document.getElementById('lo').hidden = true;
+  m.innerHTML = '<div id="lg"><h2 style="margin-top:0">老師登入</h2>帳號<input id="u" value="admin" autocomplete="username">密碼<input id="p" type="password" autocomplete="current-password"><div id="e" style="color:#c0392b;font-weight:800;min-height:20px"></div><button id="go">登入</button></div>';
+  var go = function () { fetch('/api/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({admin: 1, user: document.getElementById('u').value, pw: document.getElementById('p').value})}).then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); }).then(function (a) { if (!a[0]) { document.getElementById('e').textContent = a[1].error; return; } tok = a[1].token; localStorage.setItem('ninja-admin', tok); load(); }); };
+  document.getElementById('go').onclick = go; document.getElementById('p').onkeydown = function (e) { if (e.key === 'Enter') go(); };
+}
+function load() {
+  fetch('/api/admin', {headers: {Authorization: 'Bearer ' + tok}}).then(function (r) { if (r.status === 401) { localStorage.removeItem('ninja-admin'); login(); throw 0; } return r.json(); }).then(function (j) {
+    data = j; document.getElementById('rf').hidden = document.getElementById('lo').hidden = false; render();
+    clearInterval(timer); timer = setInterval(load, 60000);
+  }).catch(function (e) { if (e !== 0) m.textContent = '讀取失敗，請按重新整理'; });
+}
+function render() {
+  var c = data.classes[cur], h = '<div id="tabs">' + data.classes.map(function (x, i) { var n = x.students.filter(function (s) { return s.m; }).length; return '<button class="t' + (i === cur ? ' on' : '') + '" data-i="' + i + '">' + x.name + '（' + n + '/' + x.students.length + '）</button>'; }).join('') + '</div>';
+  var n0 = c.students.filter(function (s) { return s.m; }).length, nw = c.students.filter(function (s) { return s.m && s.m.stage === 'wrap'; }).length;
+  h += '<div class="sum">已有作品 ' + n0 + ' 人・已交貨 ' + nw + ' 人・共 ' + c.students.length + ' 人（每分鐘自動更新）</div>';
+  h += '<table><tr><th>座號</th><th>姓名</th><th>進度</th><th>最後更新</th><th>作品</th></tr>' + c.students.map(function (s) {
+    var m2 = s.m, L = m2 ? (LAB[m2.stage] || [m2.stage, 1]) : ['未開始', 0];
+    var act = m2 && m2.share ? '<a class="b" target="_blank" href="/view.html?id=' + m2.share + '">▶ 試玩</a> ' + (m2.sb3Url ? '<a class="b" href="' + m2.sb3Url + '" download="' + s.name + '.sb3">⬇ 下載</a>' : '<small>（尚無 Scratch 檔）</small>') : '';
+    return '<tr><td>' + s.seat + '</td><td>' + s.name + '</td><td><span class="st s' + L[1] + '">' + L[0] + '</span></td><td>' + fmt(m2 && m2.updated) + '</td><td>' + act + '</td></tr>';
+  }).join('') + '</table>';
+  m.innerHTML = h; m.querySelectorAll('#tabs button').forEach(function (b) { b.onclick = function () { cur = +b.dataset.i; render(); }; });
+}
+document.getElementById('rf').onclick = load; document.getElementById('lo').onclick = function () { localStorage.removeItem('ninja-admin'); tok = null; login(); };
+if (tok) load(); else login();
+</script></body></html>

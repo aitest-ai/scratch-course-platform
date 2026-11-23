@@ -18,9 +18,24 @@ const KEY = 'ninja-o1-v1';
 let S = null; try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { /* 第一次 */ }
 S = Object.assign({step: 0, done: [], asked: {}, art: {basket: 'basket', bc: '#c98a4b', item: 'apple', ic: '#e8483a'}, judged: false, split: false,
   mods: [], debugVariant: Math.floor(Math.random() * 3), hints: 0, checks: 0, coins: 0, paid: {}, selfck: {}, name: ''}, S || {});
+const AUTH = (() => { try { return JSON.parse(localStorage.getItem('ninja-auth')); } catch (e) { return null; } })();
+if (!AUTH || !AUTH.token) { location.replace('/week1.html'); } else { S.name = AUTH.name; }
 if (!S.name) { try { S.name = (JSON.parse(localStorage.getItem('ninja-l0-v2')) || {}).name || ''; } catch (e) { /* 沒有 */ } }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 不影響 */ } };
 const nm = () => S.name || '新人';
+const b64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+// 把作品存到雲端，老師後台就看得到。stage：draft→build→power→debug→wrap（只會往前）
+let cloudBusy = false;
+async function cloudSave(stage, blob) {
+  if (!AUTH || !AUTH.token || cloudBusy) return null;
+  cloudBusy = true;
+  try {
+    const body = {stage, mods: S.mods}; if (blob) body.sb3 = await b64(blob);
+    const r = await fetch('/api/submit', {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + AUTH.token}, body: JSON.stringify(body)});
+    if (!r.ok) { if (r.status === 401) { try { localStorage.removeItem('ninja-auth'); } catch (e) { /* 略過 */ } } return null; }
+    const j = await r.json(); S.share = j.share; if (j.sb3Url && blob) S.sb3Url = j.sb3Url; save(); return j;
+  } catch (e) { return null; } finally { cloudBusy = false; }
+}
 
 // 第一視角：說話的人是誰，視線就轉向誰（只在站在櫃台後面的場景啟用）
 let look = false, wantFocus = false;
@@ -405,11 +420,13 @@ function enterCode(mode, tk) {
     const isDebug = mode === 'debug', key = isDebug ? 'debug' : 'build';
     if (ed.loadedFor === key) return;
     const stash = (isDebug && ed.loadedFor === 'build') ? ed.vm.saveProjectSb3().then(b => { ed.myBlob = b; }) : Promise.resolve();
-    return stash.then(() => loadProjectFile(isDebug ? `/projects/l1_debug_${DEBUG[S.debugVariant].k}.sb3` : '/projects/l1_start.sb3'))
-      .then(() => isDebug ? null : applyArt()).then(() => { ed.loadedFor = key; });
+    const fromCloud = !isDebug && S.sb3Url;
+    return stash.then(() => loadProjectFile(isDebug ? `/projects/l1_debug_${DEBUG[S.debugVariant].k}.sb3` : (fromCloud ? S.sb3Url : '/projects/l1_start.sb3')).catch(e => (fromCloud ? loadProjectFile('/projects/l1_start.sb3') : Promise.reject(e))))
+      .then(() => (isDebug || fromCloud) ? null : applyArt()).then(() => { ed.loadedFor = key; });
   }).then(() => {
     loading.style.display = 'none'; window.dispatchEvent(new Event('resize'));
     clearInterval(ed.timer); ed.timer = setInterval(liveUpdate, 600); liveUpdate();
+    clearInterval(ed.auto); ed.auto = setInterval(() => { if ((curMode === 'build' || curMode === 'power') && ed.vm && document.visibilityState === 'visible') ed.vm.saveProjectSb3().then(bl => cloudSave('draft', bl)).catch(() => { }); }, 90000);
   }).catch(e => { loading.textContent = '編輯器載入失敗：' + e.message; });
   if (tk != null && !S['intro_' + mode]) {
     S['intro_' + mode] = 1; save();
@@ -504,6 +521,7 @@ function doCheck() {
       if (curMode === 'debug') d.append(h('div', {}, '✓ 修好了！' + DEBUG[S.debugVariant].why));
       else d.append(h('div', {}, curMode === 'power' ? '✓ 強化完成！按綠旗玩玩看，是不是刺激多了？' : `✓ 通過！試跑 4 秒：籃子會跟著按鍵移動，場上最多 ${r.maxClones} 個分身。`));
       done(idx);
+      if (curMode === 'debug') cloudSave('debug', null); else if (ed.vm) ed.vm.saveProjectSb3().then(bl => cloudSave(curMode, bl));
       d.append(h('div', {class: 'row', style: 'margin-top:8px'}, h('span'), h('button', {class: 'btn small', onclick: () => go(nextI)}, curMode === 'build' ? '交貨給客人' : (curMode === 'power' ? '下一步' : '交差，結單'))));
     }
   });
@@ -575,14 +593,16 @@ async function stepWrap(tk) {
   const nb = h('button', {class: 'btn'}, '送出，結單'); nb.disabled = !CK.every((_, i) => S.selfck[i]);
   CK.forEach((t, i) => { const li = h('li', {class: S.selfck[i] ? 'on' : '', onclick: () => { S.selfck[i] = !S.selfck[i]; li.classList.toggle('on', !!S.selfck[i]); save(); nb.disabled = !CK.every((_, j) => S.selfck[j]); sfx('blip'); }}, h('i', {}, S.selfck[i] ? '✓' : ''), t); li.addEventListener('click', () => { li.firstChild.textContent = S.selfck[i] ? '✓' : ''; }); list.append(li); });
   const dl = h('button', {class: 'btn sec', onclick: () => {
-    const get = ed.myBlob ? Promise.resolve(ed.myBlob) : (ed.vm ? ed.vm.saveProjectSb3() : Promise.reject());
+    const get = ed.myBlob ? Promise.resolve(ed.myBlob) : (S.sb3Url ? fetch(S.sb3Url).then(r => r.blob()) : (ed.vm ? ed.vm.saveProjectSb3() : Promise.reject()));
     get.then(blob => { const a = h('a', {href: URL.createObjectURL(blob), download: '我的接水果遊戲.sb3'}); document.body.append(a); a.click(); a.remove(); }).catch(() => toast('作品暫時不在這個頁面裡，回工作台再下載'));
   }}, '下載我的作品（.sb3）');
   nb.onclick = async () => {
     done(8); S.finished = true; save(); sfx('combo');
+    const saved = await cloudSave('wrap', ed.myBlob || (ed.vm && curMode !== 'debug' ? await ed.vm.saveProjectSb3() : null));
+    const shareUrl = S.share ? `${location.origin}/view.html?id=${S.share}` : '';
     await talk([B(`${nm()}，你做完第一張訂單了。`), B(`賺到 ${S.coins} 枚金幣，工作室的燈也亮了一點。`), B('下一張訂單，是那位獵人，他在門口等好久了。')], tk);
     sideShow(h('h2', {}, '訂單 #1 結單'), h('div', {class: 'rewards'}, h('span', {}, `🪙 金幣 ${S.coins}`), h('span', {}, '🔓 解鎖：強化模組'), h('span', {}, '🔓 解鎖：下一張訂單（獵人）')),
-      h('p', {class: 'sub'}, '下一張訂單「獵人・切水果」準備中。'), h('div', {class: 'sidebtns'}, dl, h('a', {class: 'btn', href: '/week1.html', style: 'text-decoration:none'}, '回首頁')));
+      h('p', {class: 'sub'}, '下一張訂單「獵人・切水果」準備中。'), shareUrl ? h('div', {class: 'sharebox'}, h('b', {}, '🔗 作品分享網址'), h('input', {readonly: '', value: shareUrl, onclick: e => e.target.select()}), h('button', {class: 'btn small', onclick: () => { navigator.clipboard && navigator.clipboard.writeText(shareUrl); toast('已複製分享網址'); }}, '複製'), h('small', {}, saved ? '老師後台也看得到你的作品了。' : '作品還沒上傳成功，請按「下載我的作品」另存。')) : h('p', {class: 'sub'}, '作品還沒上傳成功，請按「下載我的作品」另存。'), h('div', {class: 'sidebtns'}, dl, h('a', {class: 'btn', href: '/week1.html', style: 'text-decoration:none'}, '回首頁')));
   };
   sideShow(h('h2', {}, '結單前自我檢查'), h('p', {class: 'sub'}, '誠實勾選。每一項都做到了，才能結單。'), list, h('div', {class: 'sidebtns'}, dl, nb));
 }

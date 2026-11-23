@@ -22,6 +22,14 @@ a.go:active,button:active{transform:translateY(3px);box-shadow:0 2px 0 #2b2358}
 button.alt{background:#fff;font-size:16px;padding:9px 20px;box-shadow:0 4px 0 #2b2358}
 .note{margin-top:20px;font-size:14px;color:#6a6a86;line-height:1.8;border-top:2px dashed #ddd6f5;padding-top:12px}
 .prog{font-weight:800;color:#237a4a;margin:0 0 6px;font-size:16px}
+#login{background:#f1eeff;border:3px solid #cfc9f0;border-radius:18px;padding:18px 20px;margin:6px 0 4px}
+#login h2{margin:0 0 10px;font-size:20px}
+#login label{display:block;font-weight:800;font-size:15px;margin:8px 0 3px}
+#login select,#login input{width:100%;font:inherit;font-size:18px;padding:9px 12px;border:3px solid #2b2358;border-radius:12px;background:#fff;color:#2b2358}
+#login .err{color:#c0392b;font-weight:800;min-height:22px;margin:8px 0 0}
+#login .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.who{font-weight:800;margin:0 0 10px;font-size:17px}.who a{font-size:14px;margin-left:10px;color:#5b4fd0;cursor:pointer;text-decoration:underline}
+.tlink{font-size:13px;margin-top:8px}
 @media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}h1{font-size:30px}main{padding:22px 18px}}
 </style>
 </head>
@@ -43,23 +51,67 @@ button.alt{background:#fff;font-size:16px;padding:9px 20px;box-shadow:0 4px 0 #2
     <li>會有老闆說話的聲音效果，請先確認音量。</li>
   </ul>
   <div class="btns" id="btns"></div>
-  <p class="note">進度只存在這台電腦的這個瀏覽器，換電腦或換瀏覽器會重新開始。<br>
+  <p class="note">作品會自動存到雲端，老師看得到；換電腦登入後，從第二節 Scratch 做的作品可以接著做。<br>
   這是測試版，若遇到哪裡怪怪的，請告訴老師。<br>
   使用開源 Scratch 編輯器（AGPL-3.0）・<a href="https://github.com/aitest-ai/scratch-course-platform">原始碼</a></p>
 </main>
 <script>
 (function () {
   function get(k) { try { return JSON.parse(localStorage.getItem(k)) || null; } catch (e) { return null; } }
-  var l0 = get('ninja-l0-v2'), o1 = get('ninja-o1-v1'), box = document.getElementById('btns');
-  var inOrder = o1 && ((o1.done && o1.done.length) || (o1.step | 0) > 0);
-  var inIntro = l0 && ((l0.done && l0.done.length) || l0.name);
+  var box = document.getElementById('btns');
   function mk(txt, cls, fn, href) { var e = document.createElement(href ? 'a' : 'button'); e.textContent = txt; if (cls) e.className = cls; if (href) e.href = href; else e.onclick = fn; box.appendChild(e); return e; }
-  if (inOrder || inIntro) {
-    var nm = (o1 && o1.name) || (l0 && l0.name) || '';
-    var p = document.createElement('p'); p.className = 'prog'; p.textContent = '歡迎回來' + (nm ? '，' + nm : '') + '！上次做到：' + (inOrder ? '訂單 #1 接水果' : '開幕導覽'); box.parentNode.insertBefore(p, box);
-    mk('▶ 繼續上次進度', 'go', null, inOrder ? '/order1.html' : '/intro.html');
-    mk('重新開始', 'alt', function () { if (confirm('確定要清除進度、從頭開始嗎？')) { localStorage.removeItem('ninja-l0-v2'); localStorage.removeItem('ninja-o1-v1'); location.href = '/intro.html'; } });
-  } else mk('▶ 開始', 'go', null, '/intro.html');
+  function resetLocal() { ['ninja-l0-v2', 'ninja-o1-v1'].forEach(function (k) { localStorage.removeItem(k); }); }
+  var auth = get('ninja-auth');
+  if (auth && auth.exp && auth.exp < Date.now()) { localStorage.removeItem('ninja-auth'); auth = null; }
+  if (auth && auth.token) return home(auth);
+  loginForm();
+
+  function loginForm() {
+    box.innerHTML = '';
+    var f = document.createElement('div'); f.id = 'login';
+    f.innerHTML = '<h2>🔑 先登入，才能存作品</h2><label>班級</label><select id="c"><option value="">載入中…</option></select><label>姓名</label><select id="n" disabled><option value="">請先選班級</option></select><label>密碼（thes＋學號）</label><input id="p" type="password" autocomplete="off" placeholder="例如 thes12345"><div class="err" id="e"></div><div class="row"><button id="ok">登入</button></div><div class="tlink"><a href="/teacher.html">老師登入（後台）</a></div>';
+    box.appendChild(f);
+    var C = f.querySelector('#c'), N = f.querySelector('#n'), P = f.querySelector('#p'), E = f.querySelector('#e'), data = [];
+    fetch('/api/roster').then(function (r) { return r.json(); }).then(function (j) {
+      data = j.classes; C.innerHTML = '<option value="">請選擇班級</option>' + data.map(function (c, i) { return '<option value="' + i + '">' + c.name + '</option>'; }).join('');
+    }).catch(function () { C.innerHTML = '<option value="">載入失敗，請重新整理</option>'; });
+    C.onchange = function () {
+      var c = data[C.value]; N.disabled = !c;
+      N.innerHTML = c ? '<option value="">請選擇姓名</option>' + c.students.map(function (s) { return '<option value="' + s.i + '">' + s.name + '</option>'; }).join('') : '<option value="">請先選班級</option>';
+    };
+    function go() {
+      E.textContent = '';
+      if (!C.value || N.value === '') { E.textContent = '請選班級和姓名'; return; }
+      if (!P.value) { E.textContent = '請輸入密碼'; return; }
+      var ok = f.querySelector('#ok'); ok.disabled = true;
+      fetch('/api/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({cls: data[C.value].name, i: +N.value, pw: P.value})})
+        .then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
+        .then(function (a) {
+          ok.disabled = false;
+          if (!a[0]) { E.textContent = a[1].error || '登入失敗'; return; }
+          var prev = get('ninja-uid'), uid = a[1].cls + '|' + a[1].name;
+          if (prev && prev !== uid) resetLocal();
+          localStorage.setItem('ninja-uid', uid);
+          var au = {token: a[1].token, name: a[1].name, cls: a[1].cls, exp: Date.now() + 6.5 * 24 * 3600 * 1000};
+          localStorage.setItem('ninja-auth', JSON.stringify(au)); home(au);
+        }).catch(function () { ok.disabled = false; E.textContent = '連不上伺服器，請再試一次'; });
+    }
+    f.querySelector('#ok').onclick = go; P.onkeydown = function (e) { if (e.key === 'Enter') go(); };
+  }
+
+  function home(au) {
+    box.innerHTML = '';
+    var l0 = get('ninja-l0-v2'), o1 = get('ninja-o1-v1');
+    var inOrder = o1 && ((o1.done && o1.done.length) || (o1.step | 0) > 0);
+    var inIntro = l0 && ((l0.done && l0.done.length) || l0.name);
+    var w = document.createElement('p'); w.className = 'who'; w.textContent = au.cls + '　' + au.name + '，你好！';
+    var out = document.createElement('a'); out.textContent = '不是我？登出'; out.onclick = function () { localStorage.removeItem('ninja-auth'); location.reload(); }; w.appendChild(out);
+    box.parentNode.insertBefore(w, box);
+    if (inOrder || inIntro) {
+      mk('▶ 繼續上次進度', 'go', null, inOrder ? '/order1.html' : '/intro.html');
+      mk('重新開始', 'alt', function () { if (confirm('確定要清除進度、從頭開始嗎？')) { resetLocal(); location.href = '/intro.html'; } });
+    } else mk('▶ 開始', 'go', null, '/intro.html');
+  }
 })();
 </script>
 </body>

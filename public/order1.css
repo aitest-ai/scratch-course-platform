@@ -99,3 +99,5 @@ ul.check li.ok{color:#1f6a43}
 .rewards{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
 .rewards span{background:#fff3c6;border:2px solid #e0a526;border-radius:99px;padding:4px 14px;font-weight:700;font-size:15px}
 @media(max-width:700px){#side{top:60px;bottom:auto;max-height:55vh}}
+
+.sharebox{background:#f1eeff;border:2px solid #cfc9f0;border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:6px}.sharebox input{width:100%;font:inherit;font-size:13px;padding:6px 8px;border:2px solid #2b2358;border-radius:8px}.sharebox small{color:#237a4a;font-weight:700}
